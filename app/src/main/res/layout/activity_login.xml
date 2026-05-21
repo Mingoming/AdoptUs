@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAF7F4"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="28dp"
+        android:paddingTop="60dp"
+        android:paddingBottom="40dp"
+        android:gravity="center_horizontal">
+
+        <!-- Logo Icon -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/logo_adoptus"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Logo Text -->
+        <ImageView
+            android:layout_width="160dp"
+            android:layout_height="52dp"
+            android:src="@drawable/logo_text_adoptus"
+            android:scaleType="fitCenter"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Tagline -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Adopt Love. Change a Life."
+            android:textSize="14sp"
+            android:textColor="#AAAAAA"
+            android:layout_marginBottom="40dp"/>
+
+        <!-- Email Field -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilEmail"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:boxBackgroundColor="#FFFFFF"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxStrokeColor="#E8E0D8"
+            app:boxStrokeWidth="1dp"
+            app:hintTextColor="#AAAAAA"
+            android:hint="Email Address"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textEmailAddress"
+                android:paddingStart="16dp"
+                android:textSize="15sp"
+                android:textColor="#1A1A1A"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Password Field -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilPassword"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="28dp"
+            app:boxBackgroundColor="#FFFFFF"
+            app:boxCornerRadiusTopStart="16dp"
+            app:boxCornerRadiusTopEnd="16dp"
+            app:boxCornerRadiusBottomStart="16dp"
+            app:boxCornerRadiusBottomEnd="16dp"
+            app:boxStrokeColor="#E8E0D8"
+            app:boxStrokeWidth="1dp"
+            app:hintTextColor="#AAAAAA"
+            app:passwordToggleEnabled="true"
+            android:hint="Password"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:paddingStart="16dp"
+                android:textSize="15sp"
+                android:textColor="#1A1A1A"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Login Button -->
+        <Button
+            android:id="@+id/btnLogin"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="LOGIN"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:backgroundTint="#E8693A"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Divider OR LOGIN WITH -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#E8E0D8"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  OR LOGIN WITH  "
+                android:textSize="11sp"
+                android:textColor="#AAAAAA"
+                android:letterSpacing="0.1"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1"
+                android:background="#E8E0D8"/>
+
+        </LinearLayout>
+
+        <!-- Social Login Buttons -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="36dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <!-- Google -->
+            <com.google.android.material.button.MaterialButton xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:id="@+id/btnGoogle"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:backgroundTint="#FFFFFF"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:padding="0dp"
+                app:cornerRadius="32dp"
+                app:icon="@drawable/ic_google"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                app:iconSize="28dp"
+                app:strokeColor="#E8E0D8"
+                app:strokeWidth="1dp" />
+        </LinearLayout>
+
+        <!-- Go to Register -->
+        <TextView
+            android:id="@+id/tvGoToRegister"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Don't have an account? Register"
+            android:textColor="#E8693A"
+            android:textSize="14sp"
+            android:padding="8dp"/>
+
+    </LinearLayout>
+</ScrollView>
