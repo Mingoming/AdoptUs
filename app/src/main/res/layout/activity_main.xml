@@ -16,7 +16,6 @@
         android:textColor="@color/gray_hint"
         android:layout_marginBottom="8dp"/>
 
-
     <TextView
         android:id="@+id/tvWelcomeEmail"
         android:layout_width="wrap_content"
