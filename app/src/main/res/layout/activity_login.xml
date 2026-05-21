@@ -168,6 +168,7 @@
                 app:strokeWidth="1dp" />
         </LinearLayout>
 
+
         <!-- Go to Register -->
         <TextView
             android:id="@+id/tvGoToRegister"
