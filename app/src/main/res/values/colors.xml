@@ -2,4 +2,15 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    // component color
+    <color name="gray_stroke">#E8E0D8</color>
+
+    // text color
+    <color name="light_gray">#888888</color>
+    <color name="gray_hint">#1A1A1A</color>
+
+    // app color
+    <color name="primary_orange">#E8693A</color>
+    <color name="app_background">#FAF7F4</color>
 </resources>
