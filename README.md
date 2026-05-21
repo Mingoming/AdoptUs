@@ -1,17 +1,20 @@
 # AdoptUs Mobile App
 
-AdoptUs adalah proyek Android native berbasis Kotlin untuk kebutuhan Tugas Besar Pemrograman Mobile. Kondisi proyek saat ini masih berupa starter app Android sederhana: satu `MainActivity`, satu layout XML dengan teks `Hello World!`, resource dasar, dan contoh test bawaan.
+AdoptUs adalah proyek Android native berbasis Kotlin untuk Tugas Besar Pemrograman Mobile. Kondisi proyek saat ini sudah memiliki fondasi autentikasi pengguna dengan Firebase: login email/password, register akun, login Google, penyimpanan data user ke Firestore, dan halaman utama sederhana setelah pengguna berhasil masuk.
 
-Dokumen ini hanya menjelaskan implementasi yang sudah ada di repository saat ini. Fitur domain seperti adopsi hewan, autentikasi, database, video feed, atau komunikasi WhatsApp belum diimplementasikan.
+Dokumen ini hanya menjelaskan implementasi yang sudah ada di repository saat ini. Fitur domain adopsi hewan seperti daftar hewan, feed, status adopsi, dan komunikasi WhatsApp belum diimplementasikan.
 
 ## Status Proyek Saat Ini
 
 * Aplikasi Android native dengan satu module: `app`.
-* Package aplikasi: `com.example.adoptus`.
-* Entry point aplikasi: `MainActivity`.
-* UI menggunakan XML layout dengan `ConstraintLayout`.
-* Tema dasar menggunakan Material 3 DayNight NoActionBar.
-* Belum ada integrasi backend, Firebase, Navigation Component, Media3, Jetpack Compose, atau arsitektur MVVM modular.
+* Package dan application ID: `com.example.adoptus`.
+* `LoginActivity` menjadi launcher utama.
+* `RegisterActivity` menangani pembuatan akun baru.
+* `MainActivity` hanya bisa diakses saat user sudah login dan menampilkan email user serta tombol logout.
+* Autentikasi menggunakan Firebase Authentication untuk email/password dan Google Sign-In.
+* Data user baru disimpan ke koleksi `users` di Cloud Firestore.
+* UI masih menggunakan XML layout dengan Material Components.
+* Belum ada Navigation Component, Jetpack Compose, Media3, video feed, atau fitur adopsi hewan.
 
 ## Tech Stack
 
@@ -29,9 +32,14 @@ Dokumen ini hanya menjelaskan implementasi yang sudah ada di repository saat ini
   * Material Components
   * AndroidX Activity
   * ConstraintLayout
-  * JUnit
-  * AndroidX Test JUnit
-  * Espresso
+  * Firebase Authentication
+  * Cloud Firestore
+  * Google Services Gradle Plugin
+  * Google Sign-In
+  * Kotlin Coroutines Android
+  * Kotlin Coroutines Play Services
+  * AndroidX Lifecycle ViewModel dan LiveData
+  * JUnit, AndroidX Test JUnit, dan Espresso
 
 ## Struktur Proyek
 
@@ -39,30 +47,44 @@ Dokumen ini hanya menjelaskan implementasi yang sudah ada di repository saat ini
 .
 |-- app/
 |   |-- build.gradle.kts
+|   |-- google-services.json
 |   |-- proguard-rules.pro
 |   `-- src/
 |       |-- main/
 |       |   |-- AndroidManifest.xml
-|       |   |-- java/com/example/adoptus/MainActivity.kt
+|       |   |-- java/com/example/adoptus/
+|       |   |   |-- MainActivity.kt
+|       |   |   |-- data/
+|       |   |   |   |-- model/User.kt
+|       |   |   |   `-- repository/AuthRepository.kt
+|       |   |   `-- ui/auth/
+|       |   |       |-- AuthViewModel.kt
+|       |   |       |-- LoginActivity.kt
+|       |   |       `-- RegisterActivity.kt
 |       |   `-- res/
-|       |       |-- layout/activity_main.xml
-|       |       |-- values/colors.xml
-|       |       |-- values/strings.xml
-|       |       |-- values/themes.xml
-|       |       |-- values-night/themes.xml
 |       |       |-- drawable/
-|       |       |-- mipmap-*/
+|       |       |-- layout/activity_login.xml
+|       |       |-- layout/activity_register.xml
+|       |       |-- layout/activity_main.xml
+|       |       |-- values/
 |       |       `-- xml/
 |       |-- test/java/com/example/adoptus/ExampleUnitTest.kt
 |       `-- androidTest/java/com/example/adoptus/ExampleInstrumentedTest.kt
 |-- gradle/libs.versions.toml
-|-- gradle/wrapper/gradle-wrapper.properties
 |-- build.gradle.kts
 |-- settings.gradle.kts
-|-- gradle.properties
 |-- CHANGELOG.md
 `-- doc/adr/0001-architecture-decision.md
 ```
+
+## Alur Aplikasi
+
+1. Aplikasi membuka `LoginActivity` sebagai launcher.
+2. User bisa login menggunakan email/password atau Google Sign-In.
+3. User yang belum punya akun bisa membuka `RegisterActivity`.
+4. Register membuat akun Firebase Auth dan menyimpan data awal user ke Firestore.
+5. Setelah login/register berhasil, aplikasi membuka `MainActivity`.
+6. `MainActivity` menampilkan email user yang sedang login dan menyediakan tombol logout.
 
 ## Cara Menjalankan
 
@@ -71,6 +93,9 @@ Dokumen ini hanya menjelaskan implementasi yang sudah ada di repository saat ini
 * Android Studio yang mendukung Android Gradle Plugin 9.1.1.
 * JDK yang sesuai dengan Gradle toolchain proyek.
 * Android SDK dengan compile SDK 36.
+* Project Firebase yang sesuai dengan file `app/google-services.json`.
+* Firebase Authentication aktif untuk metode email/password dan Google.
+* Cloud Firestore aktif untuk penyimpanan dokumen user.
 
 ### Buka di Android Studio
 
@@ -96,7 +121,9 @@ macOS/Linux:
 
 ## Catatan Pengembangan
 
-Karena proyek masih berada pada tahap starter app, keputusan fitur dan arsitektur lanjutan sebaiknya dibuat setelah kebutuhan pertama AdoptUs ditentukan. Dokumentasi ini perlu diperbarui setiap kali fitur nyata ditambahkan ke aplikasi.
+Fitur yang sudah masuk baru berada di area autentikasi. Struktur saat ini mulai memakai pemisahan sederhana antara UI auth, `AuthViewModel`, dan `AuthRepository`, tetapi belum menjadi arsitektur aplikasi lengkap untuk semua fitur AdoptUs.
+
+Dokumentasi ini perlu diperbarui setiap kali fitur nyata seperti data hewan, dashboard adopsi, atau navigasi utama ditambahkan.
 
 ## Lisensi
 

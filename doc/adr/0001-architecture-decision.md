@@ -1,4 +1,4 @@
-# Architecture Decision Record: 0001 - Arsitektur Awal Proyek Android AdoptUs
+# Architecture Decision Record: 0001 - Arsitektur Awal dan Autentikasi AdoptUs
 
 * **Status:** Approved
 * **Tanggal:** 21 Mei 2026
@@ -6,60 +6,56 @@
 
 ## 1. Konteks
 
-Proyek AdoptUs saat ini berada pada tahap awal sebagai aplikasi Android native untuk Tugas Besar Pemrograman Mobile. Repository sudah berisi struktur proyek Android standar, tetapi belum memiliki fitur domain adopsi hewan.
+Proyek AdoptUs sudah bergerak dari starter app Android menjadi aplikasi dengan fondasi autentikasi. Fitur yang sudah tersedia meliputi login email/password, register akun, login Google, penyimpanan data user ke Firestore, halaman login/register, dan halaman utama sederhana setelah user berhasil login.
 
-Implementasi yang sudah ada saat ini:
-
-* Satu module Android bernama `app`.
-* Package dan application ID `com.example.adoptus`.
-* Satu activity utama, yaitu `MainActivity`.
-* Satu layout XML, yaitu `activity_main.xml`, dengan tampilan `Hello World!`.
-* Resource dasar Android seperti string, warna, tema, launcher icon, backup rules, dan data extraction rules.
-* Dependency dasar AndroidX, Material Components, ConstraintLayout, JUnit, dan Espresso.
-
-Karena fitur utama belum dibuat, keputusan arsitektur perlu dibatasi pada pondasi proyek yang benar-benar sudah ada.
+Implementasi saat ini masih fokus pada autentikasi. Fitur domain adopsi hewan seperti daftar hewan, feed, status adopsi, dan komunikasi WhatsApp belum tersedia.
 
 ## 2. Keputusan
 
-Kami menggunakan arsitektur awal Android native sederhana dengan keputusan berikut:
+Kami menggunakan arsitektur awal Android native dengan keputusan berikut:
 
-1. **Android native Kotlin**
-   * Proyek dibuat sebagai aplikasi Android native dengan Kotlin.
-   * Build menggunakan Gradle Kotlin DSL.
-
-2. **Single activity starter**
-   * `MainActivity` menjadi activity launcher utama.
-   * Belum ada fragment, Navigation Component, atau multi-screen flow.
-
-3. **XML layout**
-   * UI awal menggunakan XML layout.
-   * `activity_main.xml` menggunakan `ConstraintLayout`.
+1. **Android native Kotlin dengan XML layout**
+   * Proyek dibuat sebagai aplikasi Android native berbasis Kotlin.
+   * UI menggunakan XML layout dan Material Components.
    * Jetpack Compose belum digunakan.
 
-4. **Gradle version catalog**
-   * Dependency dikelola melalui `gradle/libs.versions.toml`.
-   * Konfigurasi module aplikasi berada di `app/build.gradle.kts`.
+2. **Flow autentikasi berbasis Activity**
+   * `LoginActivity` menjadi launcher utama aplikasi.
+   * `RegisterActivity` menangani pembuatan akun baru.
+   * `MainActivity` hanya ditampilkan setelah user sudah login.
+   * Belum ada Navigation Component atau fragment-based navigation.
 
-5. **Dependency dasar**
-   * Dependency saat ini dibatasi pada AndroidX Core KTX, AppCompat, Material Components, AndroidX Activity, ConstraintLayout, JUnit, AndroidX Test JUnit, dan Espresso.
-   * Firebase, Media3, Navigation Component, dan dependency fitur lain belum ditambahkan.
+3. **Firebase sebagai backend autentikasi awal**
+   * Firebase Authentication digunakan untuk email/password dan Google Sign-In.
+   * Cloud Firestore digunakan untuk menyimpan dokumen user pada koleksi `users`.
+   * File `app/google-services.json` digunakan untuk konfigurasi Firebase project.
+
+4. **Pemisahan sederhana UI, ViewModel, dan Repository**
+   * `AuthViewModel` menyimpan state autentikasi dengan LiveData.
+   * `AuthRepository` membungkus akses ke Firebase Auth dan Firestore.
+   * `User` menjadi model data awal untuk user.
+   * Coroutines digunakan untuk menjalankan operasi Firebase async melalui `await()`.
+
+5. **Dependency dikelola dengan Gradle version catalog**
+   * Dependency utama didefinisikan di `gradle/libs.versions.toml`.
+   * Module `app` memakai Google Services Gradle Plugin, Firebase BOM, Firebase Auth, Firestore, Google Sign-In, Coroutines, dan Lifecycle.
 
 ## 3. Konsekuensi
 
 ### Positif
 
-* Struktur proyek masih sederhana dan mudah dipahami.
-* Pondasi Android native sudah siap untuk dikembangkan bertahap.
-* Dependency masih minimal sehingga risiko konfigurasi awal lebih rendah.
-* Dokumentasi lebih mudah dijaga karena hanya mencatat kondisi yang benar-benar ada.
+* Aplikasi sudah memiliki fondasi login, register, session check, dan logout.
+* Firebase mempercepat implementasi autentikasi tanpa backend custom.
+* Pemisahan `AuthViewModel` dan `AuthRepository` membuat logic auth lebih mudah dikembangkan.
+* Google Sign-In bisa dipakai sebagai opsi login selain email/password.
 
 ### Negatif
 
-* Aplikasi belum memiliki fitur domain AdoptUs.
-* UI masih berupa tampilan default `Hello World!`.
-* Arsitektur MVVM, repository, backend, navigasi, dan penyimpanan data belum tersedia.
-* Keputusan fitur seperti Firebase, video feed, atau komunikasi WhatsApp belum bisa dianggap sebagai bagian dari implementasi saat ini.
+* Flow masih berbasis beberapa Activity dan belum memakai navigasi terpusat.
+* Arsitektur baru diterapkan pada area autentikasi, belum pada seluruh aplikasi.
+* Aplikasi bergantung pada konfigurasi Firebase dan Google Sign-In yang benar.
+* Fitur domain AdoptUs belum tersedia, sehingga `MainActivity` masih berupa halaman sederhana setelah login.
 
 ## 4. Catatan Lanjutan
 
-ADR baru perlu dibuat atau ADR ini perlu diperbarui ketika proyek mulai menambahkan fitur nyata, dependency besar, atau struktur arsitektur baru seperti MVVM, Navigation Component, database lokal, atau integrasi backend.
+ADR baru perlu dibuat ketika proyek mulai menambahkan arsitektur navigasi utama, data hewan, role adopter/foster, atau fitur backend lain di luar autentikasi. Jika fitur domain sudah bertambah, struktur package dan pola repository perlu distandardisasi agar tidak hanya berlaku untuk auth.
