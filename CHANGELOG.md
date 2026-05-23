@@ -4,6 +4,39 @@ Semua perubahan penting pada proyek Android **AdoptUs** didokumentasikan di file
 
 Format changelog ini mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+# Changelog
+
+Semua perubahan penting pada proyek **AdoptUs** akan dicatat di file ini. Format ini mengacu pada standar [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [Unreleased] - 2026-05-23
+
+### Added
+- **Floating Bottom Navigation Bar**: Membuat menu navigasi melayang di `MainActivity` dengan 4 item utama: Feed, Search, Add Post, dan Profile.
+- **Modular Fragment Package**: Membuat package folder `fragment` dan memisahkan struktur halaman utama ke dalam `FeedFragment`, `SearchFragment`, `AddPostFragment`, dan `ProfileFragment`.
+- **UI Profile Page (Frontend Mode)**:
+    * Layout detail informasi pengguna menggunakan `ConstraintLayout`.
+    * Komponen statistik (*Pets Listed* & *Successful Adoptions*) yang rata tengah secara horizontal di sebelah kanan avatar.
+    * Komponen `TabLayout` interaktif untuk menu pemisah antara **Pets** dan **Content**.
+    * `RecyclerView` dengan tipe Grid 3 Kolom untuk menampilkan galeri foto.
+    * Kartu gambar *full-bleed* (foto penuh) tanpa sudut melengkung (`cardCornerRadius="0dp"`) agar visual terlihat lebih modern.
+    * Fitur deteksi tipe konten (`isVideo`). Jika item bernilai `true`, kartu akan otomatis memunculkan overlay bayangan dan ikon tombol *Play* (▶️) di tengah gambar.
+- **Interactive Tab Listener**: Menambahkan logika `addOnTabSelectedListener` di `ProfileFragment` untuk menukar isi list data di dalam adapter secara instan menggunakan fungsi `updateList()` saat tab diketuk.
+
+### Changed
+- **MainActivity Architecture**: Mengubah fungsi `MainActivity` menjadi *Host Single Activity* yang mengontrol navigasi fragment via `FrameLayout` (`fragment_container`) agar perpindahan halaman tidak berkedip (*screen blinking*).
+- **Global Theme Customization**: Mengubah warna kapsul aktif bawaan (*Active Indicator Pill*) Material 3 secara global di `themes.xml` menjadi warna oranye pastel lembut (`#FFF0EC`) agar selaras dengan tema aplikasi.
+
+### Fixed
+- **Android Resource Linking Error**: Memperbaiki eror *incompatible attribute* pada `TabLayout` dengan mengganti properti latar belakang mentah `"transparent"` menjadi warna sistem resmi `@android:color/transparent`.
+- **Adapter Syncing Bug**: Menyinkronkan variabel objek adapter di `rvPetGrid` agar data class `DummyItem` terbaca dengan benar dan tidak memicu eror *unresolved reference* saat proyek di-compile.
+
+### Removed
+- **Hapus button logout di `MainActivity`**
+
+## Rencana Berikutnya
+- **Waktu password salah, ganti toast messagenya jadi pass/email salah, soalnya dia masih pake "auth credential is incoreect, ......."**
+- **Klo ud login dan punya akun, pas buka app langsung ke feed**
+
 ## [0.2.0-alpha] - 2026-05-21
 
 ### Added

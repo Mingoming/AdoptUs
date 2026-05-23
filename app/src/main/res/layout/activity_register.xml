@@ -6,7 +6,8 @@
     android:orientation="vertical"
     android:padding="24dp"
     android:gravity="center_vertical"
-    android:background="#FAF7F4">
+    android:background="@color/app_background">
+
 
     <TextView
         android:layout_width="wrap_content"
@@ -93,6 +94,7 @@
         app:boxCornerRadiusBottomEnd="16dp"
         app:boxStrokeColor="@color/gray_stroke"
         app:boxStrokeWidth="1dp"
+        app:passwordToggleEnabled="true"
         app:hintTextColor="@color/gray_hint">
 
         <com.google.android.material.textfield.TextInputEditText

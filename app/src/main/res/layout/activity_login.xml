@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/app_background"
@@ -85,8 +86,7 @@
             app:boxStrokeWidth="1dp"
             app:hintTextColor="@color/gray_hint"
             app:passwordToggleEnabled="true"
-            android:hint="Password"
-            xmlns:app="http://schemas.android.com/apk/res-auto">
+            android:hint="Password">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPassword"
@@ -94,8 +94,8 @@
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
                 android:paddingStart="16dp"
-                android:textSize="15sp"
-                android:textColor="@color/primary_orange"/>
+                android:textColor="@color/primary_orange"
+                android:textSize="15sp" />
 
         </com.google.android.material.textfield.TextInputLayout>
 

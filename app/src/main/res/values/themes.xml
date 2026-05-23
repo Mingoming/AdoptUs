@@ -3,7 +3,10 @@
     <style name="Base.Theme.AdoptUs" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorSecondaryContainer">@color/highlight_orange</item>
     </style>
 
     <style name="Theme.AdoptUs" parent="Base.Theme.AdoptUs" />
+
+
 </resources>

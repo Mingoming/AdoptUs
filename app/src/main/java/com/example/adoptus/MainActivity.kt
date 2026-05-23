@@ -2,12 +2,20 @@ package com.example.adoptus
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
+import android.widget.*
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+
+import androidx.fragment.app.Fragment
+import com.example.adoptus.fragment.FeedFragment
+import com.example.adoptus.fragment.SearchFragment
+import com.example.adoptus.fragment.AddPostFragment
+import com.example.adoptus.fragment.ProfileFragment
+
 import com.example.adoptus.ui.auth.AuthViewModel
 import com.example.adoptus.ui.auth.LoginActivity
+
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : AppCompatActivity() {
@@ -25,15 +33,34 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        val tvEmail   = findViewById<TextView>(R.id.tvWelcomeEmail)
-        val btnLogout = findViewById<Button>(R.id.btnLogout)
+        //val tvEmail   = findViewById<TextView>(R.id.tvWelcomeEmail)
 
-        tvEmail.text = FirebaseAuth.getInstance().currentUser?.email ?: ""
+        //tvEmail.text = FirebaseAuth.getInstance().currentUser?.email ?: ""
 
-        btnLogout.setOnClickListener {
-            viewModel.logout()
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
+
+        val bottomNav : BottomNavigationView = findViewById(R.id.bottom_navigation)
+
+        if (savedInstanceState == null) {
+            setCurrentFragment(FeedFragment())
         }
+
+        bottomNav.setOnItemSelectedListener { item ->
+            val targetFragment: Fragment = when (item.itemId) {
+                R.id.menu_feed -> FeedFragment()
+                R.id.menu_search -> SearchFragment()
+                R.id.menu_add -> AddPostFragment()
+                R.id.menu_profile -> ProfileFragment()
+                else -> FeedFragment()
+            }
+            setCurrentFragment(targetFragment)
+        }
+    }
+
+    private fun setCurrentFragment(fragment: Fragment): Boolean {
+        supportFragmentManager.beginTransaction().apply {
+            replace(R.id.fragment_container, fragment)
+            commit()
+        }
+        return true
     }
 }
