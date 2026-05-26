@@ -21,13 +21,7 @@ Semua perubahan penting pada proyek **AdoptUs** akan dicatat di file ini. Format
     * Kartu gambar *full-bleed* (foto penuh) tanpa sudut melengkung (`cardCornerRadius="0dp"`) agar visual terlihat lebih modern.
     * Fitur deteksi tipe konten (`isVideo`). Jika item bernilai `true`, kartu akan otomatis memunculkan overlay bayangan dan ikon tombol *Play* (▶️) di tengah gambar.
 - **Interactive Tab Listener**: Menambahkan logika `addOnTabSelectedListener` di `ProfileFragment` untuk menukar isi list data di dalam adapter secara instan menggunakan fungsi `updateList()` saat tab diketuk.
-- **Modern Splash Screen Integration**:
-  * Menambahkan implementasi Android 12+ SplashScreen API menggunakan `androidx.core:core-splashscreen`.
-  * Menambahkan tema khusus `Theme.AdoptUs.Splash` pada `themes.xml`.
-  * Menambahkan logo aplikasi dan background color sebagai tampilan awal saat aplikasi dibuka.
-  * Mengintegrasikan `installSplashScreen()` pada `MainActivity` agar transisi splash screen berjalan otomatis dan lebih smooth.
-  * Mengubah launcher theme di `AndroidManifest.xml` agar aplikasi menggunakan splash theme sebelum masuk ke halaman utama.
-  
+
 ### Changed
 - **MainActivity Architecture**: Mengubah fungsi `MainActivity` menjadi *Host Single Activity* yang mengontrol navigasi fragment via `FrameLayout` (`fragment_container`) agar perpindahan halaman tidak berkedip (*screen blinking*).
 - **Global Theme Customization**: Mengubah warna kapsul aktif bawaan (*Active Indicator Pill*) Material 3 secara global di `themes.xml` menjadi warna oranye pastel lembut (`#FFF0EC`) agar selaras dengan tema aplikasi.
