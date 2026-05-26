@@ -8,18 +8,26 @@
         android:allowBackup="true"
         android:theme="@style/Theme.AdoptUs">
 
-        <activity android:name=".MainActivity"/>
-
+        <!-- Main Activity + Splash -->
         <activity
-            android:name=".ui.auth.LoginActivity"
-            android:exported="true">
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AdoptUs.Splash">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
         </activity>
 
-        <activity android:name=".ui.auth.RegisterActivity"/>
+        <!-- Login -->
+        <activity
+            android:name=".ui.auth.LoginActivity" />
+
+        <!-- Register -->
+        <activity
+            android:name=".ui.auth.RegisterActivity"/>
 
     </application>
 

@@ -1,12 +1,28 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+
     <!-- Base application theme. -->
     <style name="Base.Theme.AdoptUs" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
         <item name="colorSecondaryContainer">@color/highlight_orange</item>
+
     </style>
 
     <style name="Theme.AdoptUs" parent="Base.Theme.AdoptUs" />
 
+
+
+    <!-- Splash Screen Theme -->
+    <style name="Theme.AdoptUs.Splash" parent="Theme.SplashScreen">
+
+        <!-- Background -->
+        <item name="windowSplashScreenBackground">@color/app_background</item>
+
+        <!-- Logo -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen</item>
+
+        <!-- Theme setelah splash -->
+        <item name="postSplashScreenTheme">@style/Theme.AdoptUs</item>
+
+    </style>
 
 </resources>
