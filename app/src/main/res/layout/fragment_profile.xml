@@ -66,7 +66,7 @@
                     android:layout_marginStart="16dp"
                     android:layout_marginTop="8dp"
                     android:text="Sarah Mitchell"
-                    android:textColor="#1A1A1A"
+                    android:textColor="@color/gray_hint"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -156,23 +156,31 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/tabLayout"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@android:color/transparent"
-                app:tabIndicatorColor="@color/primary_orange"
-                app:tabSelectedTextColor="@color/primary_orange"
-                app:tabTextColor="@color/light_gray">
-                <com.google.android.material.tabs.TabItem
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="Post"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_grid"
+                    app:tint="@color/primary_orange" />
+
+                <TextView
+                    android:id="@+id/tvPost"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🐾 Pets" />
-                <com.google.android.material.tabs.TabItem
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="📹 Content" />
-            </com.google.android.material.tabs.TabLayout>
+                    android:layout_gravity="center"
+                    android:text="Post"
+                    android:textColor="@color/gray_hint"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvPetGrid"

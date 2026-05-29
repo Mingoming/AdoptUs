@@ -3,6 +3,7 @@ package com.example.adoptus
 import android.content.Intent
 import android.os.Bundle
 import android.widget.*
+import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 
@@ -22,6 +23,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: AuthViewModel by viewModels()
+    private lateinit var bottomNav: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -43,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         //tvEmail.text = FirebaseAuth.getInstance().currentUser?.email ?: ""
 
 
-        val bottomNav : BottomNavigationView = findViewById(R.id.bottom_navigation)
+        bottomNav = findViewById(R.id.bottom_navigation)
 
         if (savedInstanceState == null) {
             setCurrentFragment(FeedFragment())
@@ -67,5 +69,11 @@ class MainActivity : AppCompatActivity() {
             commit()
         }
         return true
+    }
+
+    fun setBottomNavVisibility(show: Boolean) {
+        if (::bottomNav.isInitialized) {
+            bottomNav.visibility = if (show) View.VISIBLE else View.GONE
+        }
     }
 }
