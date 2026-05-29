@@ -20,6 +20,7 @@ class RegisterActivity : AppCompatActivity() {
         setContentView(R.layout.activity_register)
 
         val etFullName = findViewById<TextInputEditText>(R.id.etFullName)
+        val etUsername = findViewById<TextInputEditText>(R.id.etUsername)
         val etEmail    = findViewById<TextInputEditText>(R.id.etEmail)
         val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
         val btnReg     = findViewById<Button>(R.id.btnRegister)
@@ -27,11 +28,22 @@ class RegisterActivity : AppCompatActivity() {
 
         btnReg.setOnClickListener {
             val fullName = etFullName.text.toString().trim()
+            val username = etUsername.text.toString().trim()
             val email    = etEmail.text.toString().trim()
             val password = etPassword.text.toString().trim()
 
-            if (fullName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            if (fullName.isEmpty() || username.isEmpty() ||email.isEmpty() || password.isEmpty()) {
                 Toast.makeText(this, "Semua field wajib diisi", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (username.length < 3) {
+                Toast.makeText(this, "Username minimal 3 karakter", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            if (username.contains(" ")) {
+                Toast.makeText(this, "Username tidak boleh mengandung spasi", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -40,7 +52,7 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            viewModel.register(email, password, fullName)
+            viewModel.register(email, password, fullName, username)
         }
 
         tvLogin.setOnClickListener { finish() }

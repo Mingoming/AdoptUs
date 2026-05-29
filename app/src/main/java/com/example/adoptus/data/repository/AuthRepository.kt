@@ -15,7 +15,8 @@ class AuthRepository {
     suspend fun register(
         email: String,
         password: String,
-        fullName: String
+        fullName: String,
+        username: String
     ): Result<FirebaseUser> {
         return try {
             val result = auth
@@ -26,7 +27,7 @@ class AuthRepository {
 
             val userData = hashMapOf(
                 "id"         to uid,
-                "username"   to email.substringBefore("@"),
+                "username"   to username,
                 "email"      to email,
                 "full_name"  to fullName,
                 "photo_url"  to "",
