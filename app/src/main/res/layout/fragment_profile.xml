@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FAF7F4">
+    android:background="#FAF7F4"
+    android:fitsSystemWindows="true">
 
     <RelativeLayout
         android:id="@+id/topBar"
@@ -22,12 +23,16 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+        <ImageButton
+            android:id="@+id/btnSetting"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Settings"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
             android:src="@drawable/ic_setting"
             app:tint="@color/primary_orange" />
     </RelativeLayout>
@@ -53,8 +58,8 @@
                     android:layout_width="80dp"
                     android:layout_height="80dp"
                     android:background="#EADCC9"
-                    android:src="@android:drawable/ic_menu_gallery"
                     android:padding="5dp"
+                    android:src="@android:drawable/ic_menu_gallery"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
@@ -87,9 +92,9 @@
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_gravity="center"
                         android:layout_marginEnd="24dp"
-                        android:orientation="vertical"
-                        android:layout_gravity="center">
+                        android:orientation="vertical">
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -98,6 +103,7 @@
                             android:textColor="@color/primary_orange"
                             android:textSize="18sp"
                             android:textStyle="bold" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -127,6 +133,7 @@
                             android:textSize="11sp" />
                     </LinearLayout>
                 </LinearLayout>
+
                 <androidx.constraintlayout.widget.Barrier
                     android:id="@+id/profileHeaderBarrier"
                     android:layout_width="wrap_content"
@@ -159,14 +166,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center">
+                android:gravity="center"
+                android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="Post"
                     android:layout_gravity="center"
+                    android:contentDescription="Post"
                     android:src="@drawable/ic_grid"
                     app:tint="@color/primary_orange" />
 
@@ -187,12 +194,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:paddingHorizontal="10dp"
                 android:nestedScrollingEnabled="false"
+                android:paddingHorizontal="10dp"
                 app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                 app:spanCount="3"
-                tools:listitem="@layout/profile_item_pet"
-                xmlns:tools="http://schemas.android.com/tools" />
+                tools:listitem="@layout/profile_item_pet" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

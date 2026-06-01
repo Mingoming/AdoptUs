@@ -2,79 +2,99 @@ package com.example.adoptus.ui.auth
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.adoptus.MainActivity
-import com.example.adoptus.R
-import com.google.android.material.textfield.TextInputEditText
+import com.example.adoptus.databinding.ActivityRegisterBinding
 
 class RegisterActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityRegisterBinding
     private val viewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_register)
+        binding = ActivityRegisterBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        val etFullName = findViewById<TextInputEditText>(R.id.etFullName)
-        val etUsername = findViewById<TextInputEditText>(R.id.etUsername)
-        val etEmail    = findViewById<TextInputEditText>(R.id.etEmail)
-        val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
-        val btnReg     = findViewById<Button>(R.id.btnRegister)
-        val tvLogin    = findViewById<TextView>(R.id.tvGoToLogin)
+        binding.btnRegister.setOnClickListener {
+            val fullName = binding.etFullName.text.toString().trim()
+            val username = binding.etUsername.text.toString().trim()
+            val email    = binding.etEmail.text.toString().trim()
+            val password = binding.etPassword.text.toString().trim()
 
-        btnReg.setOnClickListener {
-            val fullName = etFullName.text.toString().trim()
-            val username = etUsername.text.toString().trim()
-            val email    = etEmail.text.toString().trim()
-            val password = etPassword.text.toString().trim()
-
-            if (fullName.isEmpty() || username.isEmpty() ||email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Semua field wajib diisi", Toast.LENGTH_SHORT).show()
+            // Validasi input — pesan error tampil di field, bukan toast
+            if (fullName.isEmpty()) {
+                binding.tilFullName.error = "Full name is required."
                 return@setOnClickListener
+            } else {
+                binding.tilFullName.error = null
             }
 
-            if (username.length < 3) {
-                Toast.makeText(this, "Username minimal 3 karakter", Toast.LENGTH_SHORT).show()
+            if (username.isEmpty()) {
+                binding.tilUsername.error = "Username is required."
                 return@setOnClickListener
+            } else if (username.length < 3) {
+                binding.tilUsername.error = "Username must be at least 3 characters."
+                return@setOnClickListener
+            } else if (username.contains(" ")) {
+                binding.tilUsername.error = "Username cannot contain spaces."
+                return@setOnClickListener
+            } else {
+                binding.tilUsername.error = null
             }
 
-            if (username.contains(" ")) {
-                Toast.makeText(this, "Username tidak boleh mengandung spasi", Toast.LENGTH_SHORT).show()
+            if (email.isEmpty()) {
+                binding.tilEmail.error = "Email is required."
                 return@setOnClickListener
+            } else {
+                binding.tilEmail.error = null
             }
 
-            if (password.length < 6) {
-                Toast.makeText(this, "Password minimal 6 karakter", Toast.LENGTH_SHORT).show()
+            if (password.isEmpty()) {
+                binding.tilPassword.error = "Password is required."
                 return@setOnClickListener
+            } else if (password.length < 6) {
+                binding.tilPassword.error = "Password must be at least 6 characters."
+                return@setOnClickListener
+            } else {
+                binding.tilPassword.error = null
             }
 
             viewModel.register(email, password, fullName, username)
         }
 
-        tvLogin.setOnClickListener { finish() }
+        binding.tvGoToLogin.setOnClickListener { finish() }
 
         viewModel.state.observe(this) { state ->
             when (state) {
                 is AuthViewModel.AuthState.Loading -> {
-                    btnReg.isEnabled = false
-                    btnReg.text = "Loading..."
+                    binding.btnRegister.isEnabled = false
+                    binding.btnRegister.text = "Loading..."
                 }
                 is AuthViewModel.AuthState.Success -> {
-                    Toast.makeText(this, "Akun berhasil dibuat!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
                     startActivity(Intent(this, MainActivity::class.java))
                     finish()
                 }
                 is AuthViewModel.AuthState.Error -> {
-                    btnReg.isEnabled = true
-                    btnReg.text = "Create Account"
-                    Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
+                    binding.btnRegister.isEnabled = true
+                    binding.btnRegister.text = "CREATE ACCOUNT"
+                    Toast.makeText(this, mapFirebaseError(state.message), Toast.LENGTH_SHORT).show()
                 }
                 else -> Unit
             }
+        }
+    }
+
+    private fun mapFirebaseError(raw: String): String {
+        return when {
+            raw.contains("email address is already",  ignoreCase = true) -> "This email is already registered."
+            raw.contains("badly formatted",           ignoreCase = true) -> "Please enter a valid email address."
+            raw.contains("network",                   ignoreCase = true) -> "No internet connection. Please check your network."
+            raw.contains("weak password",             ignoreCase = true) -> "Password is too weak. Use at least 6 characters."
+            else -> "Something went wrong. Please try again."
         }
     }
 }

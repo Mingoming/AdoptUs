@@ -6,123 +6,160 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
-import com.example.adoptus.MainActivity
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.example.adoptus.R
-import com.google.android.material.textfield.TextInputEditText
+import com.example.adoptus.data.model.Post
+import com.example.adoptus.ui.feed.FeedViewModel
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AddPostFragment : Fragment() {
+
+    private val db   = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+
+    // State upload
+    private var isUploading = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_add_post, container, false)
+        return inflater.inflate(R.layout.fragment_add_post, container, false)
+    }
 
-        val btnBack = view.findViewById<ImageView>(R.id.btnBack)
-        val btnUpload = view.findViewById<TextView>(R.id.btnUpload)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val btnBack        = view.findViewById<ImageView>(R.id.btnBack) // TODO: ganti ke ImageButton
+        val btnUpload      = view.findViewById<TextView>(R.id.btnUpload)
         val btnSelectMedia = view.findViewById<View>(R.id.btnSelectMedia)
 
-        val etPetName = view.findViewById<EditText>(R.id.etPetName)
-        val actvPetType = view.findViewById<AutoCompleteTextView>(R.id.actvPetType)
-        val etPetBreed = view.findViewById<EditText>(R.id.etPetBreed)
-        val etPetAge = view.findViewById<EditText>(R.id.etPetAge)
-        val actvAgeUnit = view.findViewById<AutoCompleteTextView>(R.id.actvAgeUnit)
-
-        // Komponen Opsional & Checkbox
+        val etPetName        = view.findViewById<EditText>(R.id.etPetName)
+        val actvPetType      = view.findViewById<AutoCompleteTextView>(R.id.actvPetType)
+        val etPetBreed       = view.findViewById<EditText>(R.id.etPetBreed)
+        val etPetAge         = view.findViewById<EditText>(R.id.etPetAge)
+        val actvAgeUnit      = view.findViewById<AutoCompleteTextView>(R.id.actvAgeUnit)
         val etPetDescription = view.findViewById<EditText>(R.id.etPetDescription)
-        val etAdoptionFee = view.findViewById<EditText>(R.id.etAdoptionFee)
-        val cbVaccinated = view.findViewById<CheckBox>(R.id.cbVaccinated)
+        val etAdoptionFee    = view.findViewById<EditText>(R.id.etAdoptionFee)
+        val cbVaccinated     = view.findViewById<CheckBox>(R.id.cbVaccinated)
         val cbHealthPassport = view.findViewById<CheckBox>(R.id.cbHealthPassport)
 
-        // Setup Dropdown Pilihan (Mock Data)
+        // Setup dropdown Animal type
         val animalTypes = arrayOf("Kucing", "Anjing", "Burung", "Kelinci", "Hamster", "Lainnya")
-        val typeAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, animalTypes)
-        actvPetType.setAdapter(typeAdapter)
-
+        actvPetType.setAdapter(
+            ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, animalTypes)
+        )
         val ageUnits = arrayOf("Months", "Years")
-        val unitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, ageUnits)
-        actvAgeUnit.setAdapter(unitAdapter)
+        actvAgeUnit.setAdapter(
+            ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, ageUnits)
+        )
+        actvPetType.setOnClickListener { actvPetType.showDropDown() }
+        actvAgeUnit.setOnClickListener { actvAgeUnit.showDropDown() }
 
-        actvPetType.setOnClickListener {
-            actvPetType.showDropDown()
-        }
+        // Tombol back
+        btnBack.setOnClickListener { findNavController().navigateUp() }
 
-        actvAgeUnit.setOnClickListener {
-            actvAgeUnit.showDropDown()
-        }
-
-        // Logika Tombol Kembali (Balik ke Feed)
-        btnBack.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, FeedFragment())
-                .commit()
-        }
-
-        // Simulasi Klik Kotak Upload Foto/Video
+        // Media — placeholder dulu sampai Storage aktif
         btnSelectMedia.setOnClickListener {
-            Toast.makeText(context, "Membuka Galeri (Frontend Mode)", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Photo upload coming soon (Storage pending)", Toast.LENGTH_SHORT).show()
         }
 
-        // LOGIKA VALIDASI UTAMA SAAT KLIK UPLOAD
+        // Upload ke Firestore
         btnUpload.setOnClickListener {
-            // Ambil semua data teks inputan
-            val name = etPetName.text.toString().trim()
-            val type = actvPetType.text.toString().trim()
-            val breed = etPetBreed.text.toString().trim()
-            val age = etPetAge.text.toString().trim()
-            val ageUnit = actvAgeUnit.text.toString().trim()
+            if (isUploading) return@setOnClickListener
 
-            // Reset status error sebelum dicek ulang
-            etPetName.error = null
+            val name     = etPetName.text.toString().trim()
+            val type     = actvPetType.text.toString().trim()
+            val breed    = etPetBreed.text.toString().trim()
+            val ageStr   = etPetAge.text.toString().trim()
+            val ageUnit  = actvAgeUnit.text.toString().trim()
+            val desc     = etPetDescription.text.toString().trim()
+            val feeStr   = etAdoptionFee.text.toString().trim()
+
+            // Validasi
+            etPetName.error   = null
             actvPetType.error = null
-            etPetBreed.error = null
-            etPetAge.error = null
-            actvAgeUnit.error = null
+            etPetBreed.error  = null
+            etPetAge.error    = null
 
-            // Rangkaian Pengecekan Validasi Wajib Isi
-            if (name.isEmpty()) {
-                etPetName.error = "Please fill this field"
-                etPetName.requestFocus()
+            when {
+                name.isEmpty()   -> { etPetName.error = "Required"; etPetName.requestFocus(); return@setOnClickListener }
+                type.isEmpty()   -> { actvPetType.error = "Required"; actvPetType.requestFocus(); actvPetType.showDropDown(); return@setOnClickListener }
+                breed.isEmpty()  -> { etPetBreed.error = "Required"; etPetBreed.requestFocus(); return@setOnClickListener }
+                ageStr.isEmpty() -> { etPetAge.error = "Required"; etPetAge.requestFocus(); return@setOnClickListener }
             }
-            else if (type.isEmpty()) {
-                actvPetType.error = "Please fill this field"
-                actvPetType.requestFocus()
-                actvPetType.showDropDown()
-            }
-            else if (breed.isEmpty()) {
-                etPetBreed.error = "Please fill this field"
-                etPetBreed.requestFocus()
-            }
-            else if (age.isEmpty()) {
-                etPetAge.error = "Please fill this field"
-                etPetAge.requestFocus()
-            }
-            else if (ageUnit.isEmpty()) {
-                actvAgeUnit.error = "Please fill this field"
-                actvAgeUnit.requestFocus()
-                actvAgeUnit.showDropDown()
-            }
-            else {
-                // JIKA SEMUA FORM WAJIB SUDAH LOLOS SELEKSI
-                Toast.makeText(context, "Post '$name' successfully uploaded!", Toast.LENGTH_LONG).show()
 
-                // Tendang balik user ke halaman utama (Feed)
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, FeedFragment())
-                    .commit()
+            val age = ageStr.toIntOrNull() ?: 0
+            val fee = feeStr.toIntOrNull() ?: 0
+            val unit = if (ageUnit.isEmpty()) "Months" else ageUnit
+
+            // Ambil kota dari profil user — untuk sekarang pakai placeholder
+            val city = "Indonesia"
+
+            val post = Post(
+                petName           = name,
+                petType           = type,
+                breed             = breed,
+                age               = age,
+                ageUnit           = unit,
+                city              = city,
+                description       = desc,
+                mediaUrl          = "",        // kosong dulu sampai Storage aktif
+                mediaType         = "image",
+                isVaccinated      = cbVaccinated.isChecked,
+                hasHealthPassport = cbHealthPassport.isChecked,
+                adoptionFee       = fee,
+                status            = "available",
+                likesCount        = 0,
+                createdAt         = Timestamp.now()
+            )
+
+            uploadPost(post, btnUpload)
+        }
+    }
+
+    private fun uploadPost(post: Post, btnUpload: TextView) {
+        isUploading = true
+        btnUpload.text = "Uploading..."
+        btnUpload.isEnabled = false
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val uid = auth.currentUser?.uid
+                    ?: throw Exception("Not logged in")
+
+                val docRef = db.collection("posts").document()
+                val postWithId = post.copy(
+                    postId = docRef.id,
+                    userId = uid
+                )
+                docRef.set(postWithId.toMap()).await()
+
+                Toast.makeText(context, "Post uploaded! 🐾", Toast.LENGTH_SHORT).show()
+                findNavController().navigateUp()
+
+            } catch (e: Exception) {
+                isUploading = false
+                btnUpload.text = "Upload"
+                btnUpload.isEnabled = true
+                Toast.makeText(context, "Upload failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-
-        return view
     }
 
     override fun onResume() {
         super.onResume()
-        (activity as? MainActivity)?.setBottomNavVisibility(false)
+        (activity as? com.example.adoptus.MainActivity)?.hideBottomNav()
     }
 
     override fun onPause() {
         super.onPause()
-        (activity as? MainActivity)?.setBottomNavVisibility(true)
+        (activity as? com.example.adoptus.MainActivity)?.showBottomNav()
     }
 }

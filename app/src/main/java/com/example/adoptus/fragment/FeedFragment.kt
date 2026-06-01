@@ -1,60 +1,142 @@
 package com.example.adoptus.fragment
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.PagerSnapHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.example.adoptus.R
+import com.example.adoptus.data.model.Post
+import com.example.adoptus.ui.feed.FeedAdapter
+import com.example.adoptus.ui.feed.FeedViewModel
+import kotlinx.coroutines.launch
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [FeedFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
 class FeedFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
+    private val viewModel: FeedViewModel by viewModels()
+    private lateinit var adapter: FeedAdapter
+    private lateinit var rvFeed: RecyclerView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var layoutEmpty: LinearLayout
+    private lateinit var layoutError: LinearLayout
+    private lateinit var tvError: TextView
+    private lateinit var btnRetry: TextView
+
+    // Simpan posisi item yang sedang terlihat
+    private var currentVisiblePosition = 0
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_feed, container, false)
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment FeedFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            FeedFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        rvFeed       = view.findViewById(R.id.rvFeed)
+        progressBar  = view.findViewById(R.id.progressBar)
+        layoutEmpty  = view.findViewById(R.id.layoutEmpty)
+        layoutError  = view.findViewById(R.id.layoutError)
+        tvError      = view.findViewById(R.id.tvError)
+        btnRetry     = view.findViewById(R.id.btnRetry)
+
+        setupRecyclerView()
+        observeFeed()
+
+        btnRetry.setOnClickListener { viewModel.refresh() }
+    }
+
+    private fun setupRecyclerView() {
+        adapter = FeedAdapter(
+            onDetailClick = { post -> navigateToDetail(post) },
+            onApplyClick  = { post -> navigateToDetail(post) }
+        )
+
+        val layoutManager = LinearLayoutManager(requireContext())
+        rvFeed.layoutManager = layoutManager
+        rvFeed.adapter = adapter
+
+        // PagerSnapHelper = snap satu item per scroll (TikTok behavior)
+        PagerSnapHelper().attachToRecyclerView(rvFeed)
+
+        // Detect item mana yang sedang di tengah layar → play/pause video
+        rvFeed.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    val newPosition = layoutManager.findFirstCompletelyVisibleItemPosition()
+                    if (newPosition != RecyclerView.NO_POSITION && newPosition != currentVisiblePosition) {
+                        adapter.onItemInvisible(currentVisiblePosition)
+                        currentVisiblePosition = newPosition
+                        adapter.onItemVisible(currentVisiblePosition)
+                    }
                 }
             }
+        })
+    }
+
+    private fun observeFeed() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.feedState.collect { state ->
+                when (state) {
+                    is FeedViewModel.FeedState.Loading -> {
+                        progressBar.visibility  = View.VISIBLE
+                        layoutEmpty.visibility  = View.GONE
+                        layoutError.visibility  = View.GONE
+                        rvFeed.visibility       = View.GONE
+                    }
+                    is FeedViewModel.FeedState.Success -> {
+                        progressBar.visibility  = View.GONE
+                        layoutEmpty.visibility  = View.GONE
+                        layoutError.visibility  = View.GONE
+                        rvFeed.visibility       = View.VISIBLE
+                        adapter.submitList(state.posts)
+                        // Play video item pertama
+                        adapter.onItemVisible(0)
+                    }
+                    is FeedViewModel.FeedState.Empty -> {
+                        progressBar.visibility  = View.GONE
+                        layoutEmpty.visibility  = View.VISIBLE
+                        layoutError.visibility  = View.GONE
+                        rvFeed.visibility       = View.GONE
+                    }
+                    is FeedViewModel.FeedState.Error -> {
+                        progressBar.visibility  = View.GONE
+                        layoutEmpty.visibility  = View.GONE
+                        layoutError.visibility  = View.VISIBLE
+                        rvFeed.visibility       = View.GONE
+                        tvError.text = state.message
+                    }
+                }
+            }
+        }
+    }
+
+    private fun navigateToDetail(post: Post) {
+        val bundle = android.os.Bundle().apply {
+            putString("postId", post.postId)
+        }
+        findNavController().navigate(R.id.action_feed_to_detail, bundle)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        adapter.onItemInvisible(currentVisiblePosition)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        adapter.onItemVisible(currentVisiblePosition)
     }
 }

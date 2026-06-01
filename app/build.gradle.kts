@@ -61,6 +61,18 @@ dependencies {
 
     implementation(libs.google.signin)
 
+    // Navigation Fragment
+    implementation(libs.androidx.navigation.fragment)
+    implementation(libs.androidx.navigation.ui)
+
+    // Image loading
+    implementation(libs.coil)
+    implementation(libs.coil.video)
+
+    // Video player
+    implementation(libs.exoplayer)
+    implementation(libs.exoplayer.ui)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

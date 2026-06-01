@@ -2,24 +2,23 @@ package com.example.adoptus.ui.auth
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.adoptus.MainActivity
 import com.example.adoptus.R
+import com.example.adoptus.databinding.ActivityLoginBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.android.material.textfield.TextInputEditText
 
 class LoginActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityLoginBinding
     private val viewModel: AuthViewModel by viewModels()
 
-    // Google Sign-In launcher
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -28,33 +27,35 @@ class LoginActivity : AppCompatActivity() {
             val account = task.getResult(ApiException::class.java)
             account.idToken?.let { viewModel.loginWithGoogle(it) }
         } catch (e: ApiException) {
-            Toast.makeText(this, "Google Sign-In gagal: ${e.message}", Toast.LENGTH_SHORT).show()
+            showToast("Google Sign-In failed. Please try again.")
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
 
-        val etEmail    = findViewById<TextInputEditText>(R.id.etEmail)
-        val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
-        val btnLogin   = findViewById<Button>(R.id.btnLogin)
-        val btnGoogle  = findViewById<Button>(R.id.btnGoogle)
-        val tvRegister = findViewById<TextView>(R.id.tvGoToRegister)
+        // Kalau sudah login, skip halaman ini langsung ke Feed
+        val tempViewModel: AuthViewModel by viewModels()
+        if (tempViewModel.isLoggedIn()) {
+            goToMain()
+            return
+        }
 
-        // Login email/password
-        btnLogin.setOnClickListener {
-            val email    = etEmail.text.toString().trim()
-            val password = etPassword.text.toString().trim()
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        binding.btnLogin.setOnClickListener {
+            val email    = binding.etEmail.text.toString().trim()
+            val password = binding.etPassword.text.toString().trim()
+
             if (email.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this, "Email dan password wajib diisi", Toast.LENGTH_SHORT).show()
+                showToast("Please fill in all fields.")
                 return@setOnClickListener
             }
             viewModel.login(email, password)
         }
 
-        // Login Google
-        btnGoogle.setOnClickListener {
+        binding.btnGoogle.setOnClickListener {
             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.default_web_client_id))
                 .requestEmail()
@@ -63,29 +64,51 @@ class LoginActivity : AppCompatActivity() {
             googleSignInLauncher.launch(client.signInIntent)
         }
 
-        // Navigasi ke register
-        tvRegister.setOnClickListener {
+        binding.tvGoToRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
 
-        // Observe state
         viewModel.state.observe(this) { state ->
             when (state) {
                 is AuthViewModel.AuthState.Loading -> {
-                    btnLogin.isEnabled = false
-                    btnLogin.text = "Loading..."
+                    binding.btnLogin.isEnabled = false
+                    binding.btnLogin.text = "Loading..."
+                    binding.btnGoogle.isEnabled = false
                 }
                 is AuthViewModel.AuthState.Success -> {
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
+                    goToMain()
                 }
                 is AuthViewModel.AuthState.Error -> {
-                    btnLogin.isEnabled = true
-                    btnLogin.text = "LOGIN"
-                    Toast.makeText(this, state.message, Toast.LENGTH_SHORT).show()
+                    binding.btnLogin.isEnabled = true
+                    binding.btnLogin.text = "LOGIN"
+                    binding.btnGoogle.isEnabled = true
+                    showToast(mapFirebaseError(state.message))
                 }
                 else -> Unit
             }
+        }
+    }
+
+    private fun goToMain() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    // Terjemahkan pesan error Firebase yang teknis jadi pesan yang lebih bersih
+    private fun mapFirebaseError(raw: String): String {
+        return when {
+            raw.contains("no user record",        ignoreCase = true) -> "No account found with this email."
+            raw.contains("password is invalid",   ignoreCase = true) -> "Invalid email or password."
+            raw.contains("badly formatted",       ignoreCase = true) -> "Please enter a valid email address."
+            raw.contains("blocked",               ignoreCase = true) -> "Too many attempts. Please try again later."
+            raw.contains("network",               ignoreCase = true) -> "No internet connection. Please check your network."
+            raw.contains("credential is incorrect",ignoreCase = true) -> "Invalid email or password."
+            raw.contains("INVALID_LOGIN_CREDENTIALS", ignoreCase = true) -> "Invalid email or password."
+            else -> "Invalid email or password."
         }
     }
 }

@@ -4,8 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.adoptus.R
@@ -20,6 +22,12 @@ class ProfileFragment : Fragment() {
 
         val tvTopAccountName = view.findViewById<TextView>(R.id.tvTopAccountName)
         tvTopAccountName.text = "sarah_mitchell"
+
+        // Tombol setting → navigasi ke SettingFragment
+        val btnSetting = view.findViewById<ImageView>(R.id.btnSetting)
+        btnSetting.setOnClickListener {
+            findNavController().navigate(R.id.action_profile_to_setting)
+        }
 
         val rvPetGrid = view.findViewById<RecyclerView>(R.id.rvPetGrid)
         rvPetGrid.layoutManager = GridLayoutManager(context, 3)
