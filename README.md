@@ -8,7 +8,7 @@ Dikembangkan sebagai Tugas Besar Pemrograman Mobile — Universitas Mataram 2026
 
 ## Status Proyek Saat Ini
 
-### ✅ Sudah Selesai
+###  Sudah Selesai
 - Autentikasi lengkap: email/password dan Google Sign-In via Firebase
 - Session management: auto-redirect ke Feed jika sudah login, ke Login jika belum
 - Pesan error login/register yang bersih (tidak lagi raw Firebase error)
@@ -20,7 +20,7 @@ Dikembangkan sebagai Tugas Besar Pemrograman Mobile — Universitas Mataram 2026
 - BottomNavigationView terhubung ke NavController
 - Back button HP dan tombol `<` di AddPost berfungsi benar
 
-### ⏳ Pending / Belum Selesai
+###  Pending / Belum Selesai
 - Upload foto/video ke Firebase Storage — menunggu upgrade ke Blaze plan
 - Kota di AddPost masih hardcode `"Indonesia"` — belum ambil dari profil user
 - ProfileFragment masih menampilkan dummy data — belum connect ke Firestore
@@ -29,7 +29,7 @@ Dikembangkan sebagai Tugas Besar Pemrograman Mobile — Universitas Mataram 2026
 - Like functionality — tombol like ada di UI tapi belum tersimpan ke Firestore
 - Koleksi `adoptions` di Firestore — alur Apply → Approve/Reject belum diimplementasi
 
-### 🔴 Diketahui Ada Masalah
+###  Diketahui Ada Masalah
 - `btnBack` di AddPostFragment masih bertipe `ImageView`, seharusnya `ImageButton`
 - ProfileFragment masih menampilkan nama dan data dummy, belum dari Firestore
 
