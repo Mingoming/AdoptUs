@@ -186,18 +186,28 @@
 
     </LinearLayout>
 
-    <!-- Gratis / Fee badge pojok kanan atas -->
-    <TextView
-        android:id="@+id/tvFee"
-        android:layout_width="wrap_content"
+    <!-- Top safe area, so controls do not overlap the status bar. -->
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_margin="16dp"
-        android:text="FREE"
-        android:textSize="11sp"
-        android:textColor="#FFFFFF"
-        android:background="@drawable/bg_fee_badge"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="4dp" />
+        android:layout_gravity="top"
+        android:paddingStart="16dp"
+        android:paddingTop="40dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp">
+
+        <!-- Gratis / Fee badge pojok kanan atas -->
+        <TextView
+            android:id="@+id/tvFee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:text="FREE"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:background="@drawable/bg_fee_badge"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="4dp" />
+    </FrameLayout>
 
 </FrameLayout>
