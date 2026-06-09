@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/app_background"
     android:fitsSystemWindows="true"
-    android:paddingTop="40dp">
+    android:paddingTop="@dimen/screen_top_safe_padding">
 
     <RelativeLayout
         android:id="@+id/topBarAdd"

@@ -1,10 +1,13 @@
 package com.example.adoptus
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
@@ -45,9 +48,25 @@ class MainActivity : AppCompatActivity() {
             when (destination.id) {
                 R.id.addPostFragment,
                 R.id.petDetailFragment -> hideBottomNav()
-                else                   -> showBottomNav()
+                else -> showBottomNav()
+            }
+
+            when (destination.id) {
+                R.id.feedFragment -> setStatusBarAppearance(
+                    statusBarColor = Color.BLACK,
+                    useDarkIcons = false
+                )
+                else -> setStatusBarAppearance(
+                    statusBarColor = ContextCompat.getColor(this, R.color.app_background),
+                    useDarkIcons = true
+                )
             }
         }
+    }
+
+    private fun setStatusBarAppearance(statusBarColor: Int, useDarkIcons: Boolean) {
+        window.statusBarColor = statusBarColor
+        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = useDarkIcons
     }
 
     fun hideBottomNav() {
