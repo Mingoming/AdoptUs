@@ -2,35 +2,26 @@ package com.example.adoptus
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.*
 import android.view.View
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-
-import androidx.fragment.app.Fragment
-import com.example.adoptus.fragment.FeedFragment
-import com.example.adoptus.fragment.SearchFragment
-import com.example.adoptus.fragment.AddPostFragment
-import com.example.adoptus.fragment.ProfileFragment
-
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
+import com.example.adoptus.databinding.ActivityMainBinding
 import com.example.adoptus.ui.auth.AuthViewModel
 import com.example.adoptus.ui.auth.LoginActivity
 
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.firebase.auth.FirebaseAuth
-
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var navController: NavController
     private val viewModel: AuthViewModel by viewModels()
-    private lateinit var bottomNav: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         installSplashScreen()
-
         super.onCreate(savedInstanceState)
-
 
         if (!viewModel.isLoggedIn()) {
             startActivity(Intent(this, LoginActivity::class.java))
@@ -38,42 +29,32 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        //val tvEmail   = findViewById<TextView>(R.id.tvWelcomeEmail)
+        // Setup Navigation Component
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
 
-        //tvEmail.text = FirebaseAuth.getInstance().currentUser?.email ?: ""
+        // Hubungkan BottomNav ke NavController — otomatis handle semua navigasi tab
+        binding.bottomNavigation.setupWithNavController(navController)
 
-
-        bottomNav = findViewById(R.id.bottom_navigation)
-
-        if (savedInstanceState == null) {
-            setCurrentFragment(FeedFragment())
-        }
-
-        bottomNav.setOnItemSelectedListener { item ->
-            val targetFragment: Fragment = when (item.itemId) {
-                R.id.menu_feed -> FeedFragment()
-                R.id.menu_search -> SearchFragment()
-                R.id.menu_add -> AddPostFragment()
-                R.id.menu_profile -> ProfileFragment()
-                else -> FeedFragment()
+        // Sembunyikan BottomNav saat masuk ke halaman yang tidak butuh tab bar
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.addPostFragment,
+                R.id.petDetailFragment -> hideBottomNav()
+                else                   -> showBottomNav()
             }
-            setCurrentFragment(targetFragment)
         }
     }
 
-    private fun setCurrentFragment(fragment: Fragment): Boolean {
-        supportFragmentManager.beginTransaction().apply {
-            replace(R.id.fragment_container, fragment)
-            commit()
-        }
-        return true
+    fun hideBottomNav() {
+        binding.bottomNavigation.visibility = View.GONE
     }
 
-    fun setBottomNavVisibility(show: Boolean) {
-        if (::bottomNav.isInitialized) {
-            bottomNav.visibility = if (show) View.VISIBLE else View.GONE
-        }
+    fun showBottomNav() {
+        binding.bottomNavigation.visibility = View.VISIBLE
     }
 }

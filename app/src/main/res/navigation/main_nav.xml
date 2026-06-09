@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_nav"
+    app:startDestination="@id/feedFragment">
+
+    <fragment
+        android:id="@+id/feedFragment"
+        android:name="com.example.adoptus.fragment.FeedFragment"
+        android:label="Feed">
+        <action
+            android:id="@+id/action_feed_to_detail"
+            app:destination="@id/petDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/searchFragment"
+        android:name="com.example.adoptus.fragment.SearchFragment"
+        android:label="Search">
+        <action
+            android:id="@+id/action_search_to_detail"
+            app:destination="@id/petDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addPostFragment"
+        android:name="com.example.adoptus.fragment.AddPostFragment"
+        android:label="Add Post" />
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.adoptus.fragment.ProfileFragment"
+        android:label="Profile">
+        <action
+            android:id="@+id/action_profile_to_setting"
+            app:destination="@id/settingFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profile_to_detail"
+            app:destination="@id/petDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="com.example.adoptus.fragment.SettingFragment"
+        android:label="Settings" />
+
+    <fragment
+        android:id="@+id/petDetailFragment"
+        android:name="com.example.adoptus.fragment.PetDetailFragment"
+        android:label="Pet Detail">
+        <argument
+            android:name="postId"
+            app:argType="string" />
+    </fragment>
+
+</navigation>

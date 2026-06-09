@@ -1,155 +1,205 @@
 # AdoptUs Mobile App
 
-AdoptUs adalah proyek Android native berbasis Kotlin untuk Tugas Besar Pemrograman Mobile. Kondisi proyek saat ini sudah memiliki fondasi autentikasi Firebase, halaman utama berbasis fragment, bottom navigation, dan halaman profile frontend dengan data dummy lokal.
+AdoptUs adalah aplikasi Android native berbasis Kotlin untuk ekosistem adopsi hewan. Proyek ini dikembangkan sebagai Tugas Besar Pemrograman Mobile Universitas Mataram 2026.
 
-Dokumen ini hanya menjelaskan implementasi yang sudah ada di repository saat ini. Fitur domain adopsi hewan yang terhubung ke backend, upload post, pencarian hewan, feed video, dan komunikasi WhatsApp belum diimplementasikan penuh.
+Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Firebase, splash screen, navigasi utama dengan Jetpack Navigation, feed real-time dari Firestore, form add post berbasis Firestore, dan halaman setting untuk profil user.
 
 ## Status Proyek Saat Ini
 
-* Aplikasi Android native dengan satu module: `app`.
-* Package dan application ID: `com.example.adoptus`.
-* `LoginActivity` menjadi launcher utama.
-* `RegisterActivity` menangani pembuatan akun baru.
-* `MainActivity` memeriksa session login, lalu menjadi host fragment utama.
-* Autentikasi menggunakan Firebase Authentication untuk email/password dan Google Sign-In.
-* Data user baru disimpan ke koleksi `users` di Cloud Firestore.
-* UI menggunakan XML layout dengan Material Components.
-* Halaman utama menggunakan `FrameLayout` sebagai `fragment_container` dan `BottomNavigationView` sebagai navigasi bawah.
-* Fragment utama yang tersedia: `FeedFragment`, `SearchFragment`, `AddPostFragment`, dan `ProfileFragment`.
-* `FeedFragment`, `SearchFragment`, dan `AddPostFragment` masih berupa halaman placeholder.
-* `ProfileFragment` sudah memiliki layout profile, tab `Pets` dan `Content`, serta grid lokal 3 kolom dengan dummy data.
-* Belum ada Navigation Component berbasis graph, Jetpack Compose UI, Media3, feed video nyata, upload post, atau data hewan dari backend.
+### Sudah Selesai
+
+* Autentikasi email/password dan Google Sign-In menggunakan Firebase Authentication.
+* Session gate di `MainActivity`: user yang belum login diarahkan ke `LoginActivity`, user yang sudah login masuk ke Feed.
+* Register dengan field nama lengkap, username, email, dan password.
+* Pesan error login/register sudah dipetakan agar tidak menampilkan raw Firebase error.
+* Splash screen menggunakan AndroidX Core SplashScreen.
+* Jetpack Navigation Component untuk navigasi utama.
+* `BottomNavigationView` terhubung ke `NavController` melalui `setupWithNavController()`.
+* Feed vertikal full-screen dari koleksi `posts` Firestore.
+* `FeedViewModel` memakai `StateFlow`; `PostRepository` memakai `callbackFlow` untuk update real-time.
+* `FeedAdapter` mendukung media image via Coil dan video via Media3 ExoPlayer.
+* `AddPostFragment` menyimpan data teks hewan ke Firestore.
+* `SettingFragment` memuat dan menyimpan data profil user ke Firestore.
+* Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
+* `ProfileFragment` punya UI profile dan tombol setting.
+* `PetDetailFragment` tersedia sebagai destination Navigation, tetapi masih placeholder.
+
+### Belum Selesai
+
+* Upload foto/video ke Firebase Storage belum aktif.
+* `mediaUrl` masih kosong saat Add Post.
+* Kota di Add Post masih hardcode `"Indonesia"`.
+* `SearchFragment` masih template/placeholder.
+* `ProfileFragment` masih memakai dummy data lokal untuk grid.
+* `PetDetailFragment` masih placeholder.
+* Tombol like belum menyimpan state ke Firestore.
+* Alur adopsi lengkap seperti apply, approve, reject, dan koleksi `adoptions` belum tersedia.
+
+### Catatan Teknis
+
+* `btnBack` di `AddPostFragment` masih bertipe `ImageView`; sebaiknya diganti `ImageButton` untuk aksesibilitas.
+* Field user Firestore belum sepenuhnya konsisten:
+  * Register menyimpan `full_name`, `photo_url`, dan `created_at`.
+  * Setting membaca/menulis `fullName`, `bio`, `city`, dan `whatsapp`.
+  * Perlu normalisasi schema sebelum fitur profil dipakai lebih jauh.
+* Root `build.gradle.kts` lokal di working tree saat ini memiliki perubahan yang menambahkan plugin Kotlin JVM di root project. Itu bukan pola utama proyek Android ini dan sebaiknya tidak di-commit sebelum dipastikan perlu.
 
 ## Tech Stack
 
-* **Bahasa:** Kotlin
-* **Build system:** Gradle Kotlin DSL
-* **Gradle Wrapper:** Gradle 9.3.1
-* **Android Gradle Plugin:** 9.1.1
-* **Compile SDK:** 36
-* **Target SDK:** 36
-* **Min SDK:** 24
-* **Java compatibility:** Java 11
-* **Dependency utama:**
-  * AndroidX Core KTX
-  * AndroidX AppCompat
-  * AndroidX Activity
-  * ConstraintLayout
-  * Material Components
-  * Firebase Authentication
-  * Cloud Firestore
-  * Google Services Gradle Plugin
-  * Google Sign-In
-  * Kotlin Coroutines Android
-  * Kotlin Coroutines Play Services
-  * AndroidX Lifecycle ViewModel dan LiveData
-  * AndroidX Navigation Compose, Compose Material Icons Extended, dan Compose Material3 sudah tercatat sebagai dependency, tetapi UI aplikasi saat ini masih XML.
-  * JUnit, AndroidX Test JUnit, dan Espresso
+| Komponen | Teknologi |
+|---|---|
+| Bahasa | Kotlin |
+| Build System | Gradle Kotlin DSL + Version Catalog |
+| Min SDK | 24 |
+| Target/Compile SDK | 36 |
+| UI | XML Layout + Material Components |
+| Navigasi | Jetpack Navigation Component 2.7.7 |
+| Auth | Firebase Authentication |
+| Database | Cloud Firestore |
+| Media Upload | Pending Firebase Storage |
+| Image Loading | Coil 2.6.0 |
+| Video Player | Media3 ExoPlayer 1.3.1 |
+| Async | Kotlin Coroutines, Flow, StateFlow |
+| Architecture | MVVM sederhana: ViewModel + Repository |
 
 ## Struktur Proyek
 
 ```text
-.
-|-- app/
-|   |-- build.gradle.kts
-|   |-- google-services.json
-|   |-- proguard-rules.pro
-|   `-- src/
-|       |-- main/
-|       |   |-- AndroidManifest.xml
-|       |   |-- java/com/example/adoptus/
-|       |   |   |-- MainActivity.kt
-|       |   |   |-- data/
-|       |   |   |   |-- model/User.kt
-|       |   |   |   `-- repository/AuthRepository.kt
-|       |   |   |-- fragment/
-|       |   |   |   |-- AddPostFragment.kt
-|       |   |   |   |-- FeedFragment.kt
-|       |   |   |   |-- ProfileFragment.kt
-|       |   |   |   `-- SearchFragment.kt
-|       |   |   `-- ui/auth/
-|       |   |       |-- AuthViewModel.kt
-|       |   |       |-- LoginActivity.kt
-|       |   |       `-- RegisterActivity.kt
-|       |   `-- res/
-|       |       |-- color/nav_item_color.xml
-|       |       |-- drawable/
-|       |       |-- layout/
-|       |       |   |-- activity_login.xml
-|       |       |   |-- activity_register.xml
-|       |       |   |-- activity_main.xml
-|       |       |   |-- fragment_add_post.xml
-|       |       |   |-- fragment_feed.xml
-|       |       |   |-- fragment_profile.xml
-|       |       |   |-- fragment_search.xml
-|       |       |   `-- profile_item_pet.xml
-|       |       |-- menu/navbar.xml
-|       |       |-- values/
-|       |       `-- xml/
-|       |-- test/java/com/example/adoptus/ExampleUnitTest.kt
-|       `-- androidTest/java/com/example/adoptus/ExampleInstrumentedTest.kt
-|-- doc/adr/
-|   |-- 0001-architecture-decision.md
-|   `-- 0002-main-navigation-and-profile-ui.md
-|-- gradle/libs.versions.toml
-|-- build.gradle.kts
-|-- settings.gradle.kts
-`-- CHANGELOG.md
+app/src/main/
+|-- java/com/example/adoptus/
+|   |-- MainActivity.kt
+|   |-- data/
+|   |   |-- model/
+|   |   |   |-- User.kt
+|   |   |   `-- Post.kt
+|   |   `-- repository/
+|   |       |-- AuthRepository.kt
+|   |       `-- PostRepository.kt
+|   |-- fragment/
+|   |   |-- FeedFragment.kt
+|   |   |-- SearchFragment.kt
+|   |   |-- AddPostFragment.kt
+|   |   |-- ProfileFragment.kt
+|   |   |-- SettingFragment.kt
+|   |   |-- Petdetailfragment.kt
+|   |   `-- Petdetailfragmentargs.kt
+|   `-- ui/
+|       |-- auth/
+|       |   |-- AuthViewModel.kt
+|       |   |-- LoginActivity.kt
+|       |   `-- RegisterActivity.kt
+|       `-- feed/
+|           |-- FeedViewModel.kt
+|           `-- Feedadapter.kt
+`-- res/
+    |-- anim/
+    |-- color/
+    |-- drawable/
+    |-- layout/
+    |-- menu/navbar.xml
+    |-- navigation/main_nav.xml
+    |-- values/
+    `-- xml/
 ```
 
-## Alur Aplikasi
+## Firestore Schema Saat Ini
 
-1. Aplikasi membuka `LoginActivity` sebagai launcher.
-2. User bisa login menggunakan email/password atau Google Sign-In.
-3. User yang belum punya akun bisa membuka `RegisterActivity`.
-4. Register membuat akun Firebase Auth dan menyimpan data awal user ke Firestore.
-5. Setelah login/register berhasil, aplikasi membuka `MainActivity`.
-6. `MainActivity` memuat `FeedFragment` sebagai halaman awal jika user sudah login.
-7. `BottomNavigationView` mengganti isi `fragment_container` ke `FeedFragment`, `SearchFragment`, `AddPostFragment`, atau `ProfileFragment`.
-8. `ProfileFragment` menampilkan data profile frontend mode dengan dummy pets dan dummy content lokal.
-9. Tab `Pets` dan `Content` mengganti data grid melalui adapter lokal.
-10. Item content dengan `isVideo = true` menampilkan overlay ikon play pada kartu grid.
+### Koleksi `users`
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| id | String | UID Firebase Auth |
+| username | String | Username user |
+| email | String | Email Firebase Auth |
+| full_name | String | Nama lengkap dari register |
+| photo_url | String | URL foto profil, saat ini bisa kosong |
+| role | String | Default `user` |
+| created_at | Timestamp | Waktu register |
+| fullName | String | Ditulis oleh SettingFragment saat update profil |
+| bio | String | Ditulis oleh SettingFragment |
+| city | String | Ditulis oleh SettingFragment |
+| whatsapp | String | Ditulis oleh SettingFragment |
+
+### Koleksi `posts`
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| postId | String | ID dokumen post |
+| userId | String | UID owner post |
+| petName | String | Nama hewan |
+| petType | String | Jenis hewan |
+| breed | String | Ras hewan |
+| age | Number | Angka usia |
+| ageUnit | String | `Months` atau `Years` |
+| city | String | Kota lokasi hewan |
+| description | String | Deskripsi |
+| mediaUrl | String | Kosong sampai Storage aktif |
+| mediaType | String | `image` atau `video` |
+| isVaccinated | Boolean | Status vaksin |
+| hasHealthPassport | Boolean | Status buku kesehatan |
+| adoptionFee | Number | `0` berarti gratis |
+| status | String | `available`, `pending`, atau `adopted` |
+| likesCount | Number | Jumlah like |
+| createdAt | Timestamp | Waktu upload |
+
+## Alur Navigasi
+
+```text
+App dibuka
+`-- MainActivity + SplashScreen
+    |-- Belum login -> LoginActivity
+    |   |-- Login berhasil -> MainActivity
+    |   `-- RegisterActivity -> MainActivity
+    `-- Sudah login -> NavHost feedFragment
+        |-- FeedFragment
+        |   `-- PetDetailFragment
+        |-- SearchFragment
+        |-- AddPostFragment
+        |-- ProfileFragment
+        |   |-- SettingFragment
+        |   `-- PetDetailFragment
+        `-- SettingFragment
+```
+
+Bottom navigation disembunyikan saat masuk ke `AddPostFragment` dan `PetDetailFragment`.
 
 ## Cara Menjalankan
 
 ### Prasyarat
 
 * Android Studio yang mendukung Android Gradle Plugin 9.1.1.
-* JDK yang sesuai dengan Gradle toolchain proyek.
 * Android SDK dengan compile SDK 36.
-* Project Firebase yang sesuai dengan file `app/google-services.json`.
-* Firebase Authentication aktif untuk metode email/password dan Google.
-* Cloud Firestore aktif untuk penyimpanan dokumen user.
+* JDK lengkap yang memiliki `jlink.exe`.
+* File `app/google-services.json` untuk Firebase project.
+* Firebase Authentication aktif untuk email/password dan Google.
+* Cloud Firestore aktif.
 
-### Buka di Android Studio
+### Jalankan dari Android Studio
 
 1. Buka Android Studio.
-2. Pilih **File > Open**.
-3. Arahkan ke folder repository ini.
-4. Tunggu proses Gradle Sync selesai.
-5. Jalankan konfigurasi `app` pada emulator atau perangkat Android.
+2. Pilih **File > Open** dan arahkan ke folder repository.
+3. Tunggu Gradle Sync selesai.
+4. Jalankan konfigurasi `app` pada emulator atau perangkat Android.
 
-### Jalankan Test
+### Jalankan Unit Test
 
-Windows:
+Jika Gradle memakai JRE VS Code yang tidak punya `jlink.exe`, jalankan dengan JDK lokal lengkap:
 
 ```powershell
-.\gradlew.bat test
+$env:JAVA_HOME='C:\Amanta\java\Install'
+$env:PATH="$env:JAVA_HOME\bin;$env:PATH"
+.\gradlew.bat :app:testDebugUnitTest --no-daemon
 ```
 
-macOS/Linux:
+## Dokumentasi Arsitektur
 
-```bash
-./gradlew test
-```
+ADR tersedia di `doc/adr/`:
 
-## Catatan Pengembangan
-
-Area autentikasi sudah memakai pemisahan sederhana antara UI auth, `AuthViewModel`, dan `AuthRepository`. Area halaman utama memakai fragment manual via `supportFragmentManager`, belum memakai Navigation Component.
-
-Halaman profile masih frontend mode: data pet dan content masih dummy lokal di `ProfileFragment`, belum berasal dari Firestore atau API. `FeedFragment`, `SearchFragment`, dan `AddPostFragment` juga masih placeholder.
-
-Dokumentasi ini perlu diperbarui setiap kali fitur nyata seperti data hewan, upload post, pencarian, dashboard adopsi, atau navigasi utama berbasis graph ditambahkan.
+* `0001-architecture-decision.md`: arsitektur awal dan autentikasi.
+* `0002-main-navigation-and-profile-ui.md`: bottom navigation dan profile frontend mode.
+* `0003-navigation-component-migration.md`: migrasi ke Jetpack Navigation Component.
+* `0004-feed-firestore-setting.md`: Firestore feed, post model, AddPost, dan Setting.
+* `0005-current-implementation-baseline.md`: baseline implementasi terbaru dan gap teknis.
 
 ## Lisensi
 

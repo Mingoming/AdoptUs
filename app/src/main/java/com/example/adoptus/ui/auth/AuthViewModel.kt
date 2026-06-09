@@ -31,10 +31,10 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun register(email: String, password: String, fullName: String) {
+    fun register(email: String, password: String, fullName: String, username: String) {
         _state.value = AuthState.Loading
         viewModelScope.launch {
-            repo.register(email, password, fullName).fold(
+            repo.register(email, password, fullName, username).fold(
                 onSuccess = { _state.value = AuthState.Success("Register berhasil") },
                 onFailure = { _state.value = AuthState.Error(it.message ?: "Register gagal") }
             )
