@@ -72,7 +72,7 @@ class SearchFragment : Fragment() {
 
                     // TAMPILKAN TOMBOL BACK & SEMBUNYIKAN NAVBAR UTAMA
                     btnBackSearch.visibility = View.VISIBLE
-                    (activity as? MainActivity)?.setBottomNavVisibility(false)
+                    (activity as? MainActivity)?.hideBottomNav()
 
                     // Pindah ke mode hasil pencarian
                     rvExploreGrid.visibility = View.GONE
@@ -92,7 +92,7 @@ class SearchFragment : Fragment() {
 
             // 💥 SEMBUNYIKAN TOMBOL BACK & MUNCULKAN NAVBAR UTAMA KEMBALI
             btnBackSearch.visibility = View.GONE
-            (activity as? MainActivity)?.setBottomNavVisibility(true)
+            (activity as? MainActivity)?.showBottomNav()
 
             // Kembalikan visual ke grid explore awal
             tabLayoutFilter.visibility = View.GONE

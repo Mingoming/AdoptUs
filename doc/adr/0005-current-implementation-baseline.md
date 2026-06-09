@@ -24,12 +24,15 @@ Kami menetapkan baseline implementasi berikut sebagai kondisi proyek saat ini:
    * `main_nav.xml` menjadi sumber utama destination dan action.
    * `BottomNavigationView` terhubung ke `NavController` melalui `setupWithNavController()`.
    * Bottom navigation disembunyikan pada `AddPostFragment` dan `PetDetailFragment`.
+   * `MainActivity` menyediakan helper `hideBottomNav()` dan `showBottomNav()` agar fragment tidak memanggil visibility bottom nav secara langsung.
+   * `SearchFragment` memakai helper tersebut saat masuk mode hasil pencarian dan saat kembali ke grid explore awal.
 
 3. **Firestore feed dan post model**
    * Koleksi `posts` menjadi sumber feed.
    * `PostRepository` membungkus query Firestore.
    * `FeedViewModel` memakai `StateFlow`.
    * `FeedAdapter` menampilkan image dengan Coil dan video dengan Media3 ExoPlayer.
+   * `fragment_feed.xml` menampung safe area atas level layar, sedangkan `item_feed_post.xml` hanya memberi inset kecil di top badge agar konten tetap terbaca tanpa menempel ke status bar.
 
 4. **AddPost dan Setting**
    * `AddPostFragment` menyimpan data teks hewan ke Firestore.
@@ -56,6 +59,8 @@ Kami menetapkan baseline implementasi berikut sebagai kondisi proyek saat ini:
 * Search, profile data, dan pet detail belum final.
 * Storage belum aktif sehingga feed media masih bergantung pada URL kosong atau data eksternal.
 * User schema yang belum konsisten bisa menyebabkan data profile tidak terbaca sesuai ekspektasi.
+* Visibility bottom nav sekarang lebih terpusat, sehingga perubahan perilaku navigasi sebaiknya lewat helper `MainActivity`, bukan lewat akses langsung ke `binding.bottomNavigation`.
+* Layout feed perlu menjaga pembagian safe area antara fragment root dan item overlay; perubahan padding atas di salah satu sisi harus mempertimbangkan sisi lainnya.
 * Dependency Compose/Navigation Compose ada di Gradle, tetapi UI aplikasi masih XML; perlu dirapikan jika tidak digunakan.
 
 ## 4. Tindak Lanjut
