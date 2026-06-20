@@ -14,6 +14,8 @@ const REQUIRED_KEYS = [
 ];
 
 const ALLOWED_KEYS = new Set(REQUIRED_KEYS);
+const VALID_ROLES = new Set(["user", "admin", "moderator"]);
+const REDACTED_FIELDS = new Set(["email", "whatsapp"]);
 
 function stringValue(value, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -32,32 +34,83 @@ function normalizeUsername(value, uid) {
     : `user_${uid.slice(0, 8)}`;
 }
 
+function nonBlankString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
 function canonicalizeUser(documentId, data, serverTimestamp) {
   const username = normalizeUsername(data.username, documentId);
-  const legacyFullName = stringValue(
-    data.fullName,
-    stringValue(data.full_name)
-  );
+  const fullName = nonBlankString(data.fullName, data.full_name);
+  const photoUrl = nonBlankString(data.photoUrl, data.photo_url);
+  const role = nonBlankString(data.role) || "user";
 
   return {
     uid: documentId,
     username,
-    fullName: legacyFullName.trim().slice(0, 80) || username,
-    photoUrl: stringValue(
-      data.photoUrl,
-      stringValue(data.photo_url)
-    ).slice(0, 2048),
+    fullName: fullName.slice(0, 80) || username,
+    photoUrl: photoUrl.slice(0, 2048),
     bio: stringValue(data.bio).slice(0, 300),
     city: stringValue(data.city).slice(0, 80),
     whatsapp: stringValue(data.whatsapp).slice(0, 30),
-    role: "user",
+    role,
     createdAt: data.createdAt || data.created_at || serverTimestamp(),
     updatedAt: data.updatedAt || serverTimestamp(),
   };
 }
 
-function createMigrationPlan(documents, serverTimestamp) {
+function redactedValue(field, value) {
+  if (REDACTED_FIELDS.has(field) && value !== undefined && value !== "") {
+    return "[REDACTED]";
+  }
+  return value;
+}
+
+function formatMigrationDiff(current, next) {
+  const currentKeys = new Set(Object.keys(current));
+  const nextKeys = new Set(Object.keys(next));
+  const added = [];
+  const changed = [];
+  const removed = [];
+
+  for (const field of [...nextKeys].sort()) {
+    if (!currentKeys.has(field)) {
+      added.push({
+        field,
+        after: redactedValue(field, next[field]),
+      });
+    } else if (!isDeepStrictEqual(current[field], next[field])) {
+      changed.push({
+        field,
+        before: redactedValue(field, current[field]),
+        after: redactedValue(field, next[field]),
+      });
+    }
+  }
+
+  for (const field of [...currentKeys].sort()) {
+    if (!nextKeys.has(field)) {
+      removed.push({
+        field,
+        before: redactedValue(field, current[field]),
+      });
+    }
+  }
+
+  return { added, changed, removed };
+}
+
+function createMigrationPlan(
+  documents,
+  serverTimestamp,
+  isTimestamp = (value) => value != null
+) {
   const changes = [];
+  const invalid = [];
   let skipped = 0;
 
   for (const document of documents) {
@@ -66,23 +119,49 @@ function createMigrationPlan(documents, serverTimestamp) {
       document.data,
       serverTimestamp
     );
+    const errors = validateCanonicalUser(
+      document.id,
+      canonical,
+      isTimestamp
+    );
+
+    if (errors.length > 0) {
+      invalid.push({
+        id: document.id,
+        errors,
+      });
+      continue;
+    }
 
     if (isDeepStrictEqual(document.data, canonical)) {
       skipped += 1;
     } else {
+      if (!document.updateTime) {
+        invalid.push({
+          id: document.id,
+          errors: ["missing snapshot updateTime"],
+        });
+        continue;
+      }
       changes.push({
         id: document.id,
         data: canonical,
+        updateTime: document.updateTime,
+        removeFields: Object.keys(document.data)
+          .filter((field) => !ALLOWED_KEYS.has(field)),
+        diff: formatMigrationDiff(document.data, canonical),
       });
     }
   }
 
   return {
     changes,
+    invalid,
     report: {
       scanned: documents.length,
       changed: changes.length,
       skipped,
+      invalid: invalid.length,
     },
   };
 }
@@ -136,8 +215,8 @@ function validateCanonicalUser(
   if (typeof data.whatsapp !== "string" || data.whatsapp.length > 30) {
     errors.push("whatsapp is invalid");
   }
-  if (data.role !== "user") {
-    errors.push("role must be user");
+  if (!VALID_ROLES.has(data.role)) {
+    errors.push("role is not recognized");
   }
   if (!isTimestamp(data.createdAt)) {
     errors.push("createdAt is not Timestamp");
@@ -152,6 +231,8 @@ function validateCanonicalUser(
 module.exports = {
   canonicalizeUser,
   createMigrationPlan,
+  formatMigrationDiff,
   normalizeUsername,
   validateCanonicalUser,
+  VALID_ROLES,
 };

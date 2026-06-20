@@ -28,7 +28,8 @@ function initializeFirestore() {
     db: getFirestore(),
     isEmulator: Boolean(emulatorHost),
     projectId,
-    serverTimestamp: () => FieldValue.serverTimestamp(),
+    serverTimestamp: () => Timestamp.now(),
+    deleteField: () => FieldValue.delete(),
     isTimestamp: (value) => value instanceof Timestamp,
   };
 }

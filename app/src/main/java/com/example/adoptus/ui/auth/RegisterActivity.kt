@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.adoptus.MainActivity
+import com.example.adoptus.data.model.User
 import com.example.adoptus.databinding.ActivityRegisterBinding
 
 class RegisterActivity : AppCompatActivity() {
@@ -38,14 +39,8 @@ class RegisterActivity : AppCompatActivity() {
             if (username.isEmpty()) {
                 binding.tilUsername.error = "Username is required."
                 return@setOnClickListener
-            } else if (username.length < 3) {
-                binding.tilUsername.error = "Username must be at least 3 characters."
-                return@setOnClickListener
-            } else if (username.length > 30) {
-                binding.tilUsername.error = "Username must be 30 characters or fewer."
-                return@setOnClickListener
-            } else if (username.contains(" ")) {
-                binding.tilUsername.error = "Username cannot contain spaces."
+            } else if (!User.isValidUsername(username)) {
+                binding.tilUsername.error = "Username must be 3-30 characters without whitespace."
                 return@setOnClickListener
             } else {
                 binding.tilUsername.error = null

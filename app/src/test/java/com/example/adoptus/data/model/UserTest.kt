@@ -64,6 +64,23 @@ class UserTest {
     }
 
     @Test
+    fun fromMapUsesNonblankLegacyFallbackWhenCanonicalValueIsBlank() {
+        val user = User.fromMap(
+            documentId = "u1",
+            map = mapOf(
+                "username" to "legacy_owner",
+                "fullName" to " ",
+                "full_name" to "Legacy Owner",
+                "photoUrl" to "",
+                "photo_url" to "legacy.jpg"
+            )
+        )
+
+        assertEquals("Legacy Owner", user.fullName)
+        assertEquals("legacy.jpg", user.photoUrl)
+    }
+
+    @Test
     fun newDocumentMapWritesOnlyCanonicalSchema() {
         val createdAt = Any()
         val updatedAt = Any()
@@ -102,6 +119,9 @@ class UserTest {
     fun normalizeUsernameProducesRuleCompatibleValue() {
         assertEquals("john_doe", User.normalizeUsername(" John Doe! ", "u12345678"))
         assertEquals("user_u1234567", User.normalizeUsername("@@", "u12345678"))
+        assertFalse(User.isValidUsername("john\tdoe"))
+        assertFalse(User.isValidUsername("john\ndoe"))
+        assertTrue(User.isValidUsername("john_doe"))
     }
 
     @Test

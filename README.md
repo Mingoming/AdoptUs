@@ -43,6 +43,7 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `btnBack` di `AddPostFragment` masih bertipe `ImageView`; sebaiknya diganti `ImageButton` untuk aksesibilitas.
 * Data user production lama mungkin masih memakai `full_name`, `photo_url`, dan `created_at`.
 * Aplikasi melakukan dual-read untuk schema lama dan canonical sampai migrasi production selesai.
+* Transitional rules membatasi pembacaan dokumen user ke pemiliknya agar email legacy tidak terekspos.
 * `firestore.rules` adalah rules strict dan tidak boleh dideploy sebelum backup, dry-run, migrasi, dan verifikasi selesai.
 
 ## Tech Stack
@@ -116,7 +117,7 @@ app/src/main/
 | bio | String | Bio, maksimal 300 karakter |
 | city | String | Kota, maksimal 80 karakter |
 | whatsapp | String | Nomor WhatsApp, maksimal 30 karakter |
-| role | String | Default `user` |
+| role | String | `user`, `admin`, atau `moderator`; registrasi client selalu `user` |
 | createdAt | Timestamp | Waktu register, immutable |
 | updatedAt | Timestamp | Waktu perubahan profil terakhir |
 
@@ -236,6 +237,8 @@ npm run migrate:users:dry
 node scripts/migrate-users.js --confirm-production
 npm run verify:users
 ```
+
+Dry-run menampilkan diff field-level dengan email dan WhatsApp tersensor. Migration memvalidasi seluruh dokumen sebelum write pertama dan keluar dengan status conflict jika `updateTime` berubah; periksa serta ulangi dry-run untuk dokumen tersebut, jangan menimpanya manual.
 
 Jangan menjalankan migration production sebelum backup selesai dan output dry-run sudah diperiksa. Jika strict rules menolak operasi client yang valid, deploy kembali transitional rules, tambahkan regression test, lalu perbaiki strict rules. Jangan kembali ke rules terbuka.
 

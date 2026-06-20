@@ -3,7 +3,14 @@ const path = require("node:path");
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { initializeApp } = require("firebase-admin/app");
-const { getFirestore, Timestamp } = require("firebase-admin/firestore");
+const {
+  FieldValue,
+  getFirestore,
+  Timestamp,
+} = require("firebase-admin/firestore");
+const {
+  writeWithPreconditions,
+} = require("../scripts/migrate-users");
 
 const projectId = "demo-adoptus";
 const app = initializeApp({ projectId }, "migration-emulator-test");
@@ -30,6 +37,7 @@ test("migration CLI dry-runs migrates and verifies emulator users", async () => 
     id: "u1",
     username: "Legacy User",
     email: "legacy@example.com",
+    whatsapp: "08123456789",
     full_name: "Legacy User",
     photo_url: "",
     role: "user",
@@ -37,14 +45,17 @@ test("migration CLI dry-runs migrates and verifies emulator users", async () => 
   });
 
   const dryRunOutput = runScript("scripts/migrate-users.js", ["--dry-run"]);
-  assert.match(dryRunOutput, /\[DRY\] users\/u1/);
+  assert.match(dryRunOutput, /"operation":"DRY_RUN"/);
+  assert.match(dryRunOutput, /"path":"users\/u1"/);
+  assert.doesNotMatch(dryRunOutput, /legacy@example\.com/);
+  assert.doesNotMatch(dryRunOutput, /081234/);
 
   const afterDryRun = (await db.collection("users").doc("u1").get()).data();
   assert.equal(afterDryRun.full_name, "Legacy User");
   assert.equal(afterDryRun.fullName, undefined);
 
   const migrationOutput = runScript("scripts/migrate-users.js");
-  assert.match(migrationOutput, /\[WRITE\] users\/u1/);
+  assert.match(migrationOutput, /"operation":"WRITE"/);
 
   const migrated = (await db.collection("users").doc("u1").get()).data();
   assert.equal(migrated.uid, "u1");
@@ -55,4 +66,46 @@ test("migration CLI dry-runs migrates and verifies emulator users", async () => 
 
   const verificationOutput = runScript("scripts/verify-users.js");
   assert.match(verificationOutput, /"invalidCount": 0/);
+});
+
+test("stale updateTime is reported as conflict without overwriting data", async () => {
+  const ref = db.collection("users").doc("conflict-user");
+  await ref.set({
+    id: "conflict-user",
+    username: "legacy_user",
+    full_name: "Before",
+    photo_url: "",
+    role: "user",
+    created_at: Timestamp.now(),
+  });
+  const staleSnapshot = await ref.get();
+  await ref.update({ full_name: "Concurrent Edit" });
+
+  const result = await writeWithPreconditions(
+    db,
+    [{
+      id: "conflict-user",
+      updateTime: staleSnapshot.updateTime,
+      data: {
+        uid: "conflict-user",
+        username: "legacy_user",
+        fullName: "Before",
+        photoUrl: "",
+        bio: "",
+        city: "",
+        whatsapp: "",
+        role: "user",
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      },
+      removeFields: ["id", "full_name", "photo_url", "created_at"],
+    }],
+    () => FieldValue.delete()
+  );
+
+  assert.deepEqual(result.written, []);
+  assert.equal(result.conflicts.length, 1);
+  const current = (await ref.get()).data();
+  assert.equal(current.full_name, "Concurrent Edit");
+  assert.equal(current.fullName, undefined);
 });

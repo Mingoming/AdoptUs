@@ -130,6 +130,23 @@ test("profile owner can update editable canonical fields", async () => {
   }));
 });
 
+test("profile owner preserves an existing recognized privileged role", async () => {
+  await seed("users/u1", {
+    ...canonicalUser("u1"),
+    role: "admin",
+  });
+  const db = testEnv.authenticatedContext("u1").firestore();
+
+  await assertSucceeds(updateDoc(doc(db, "users/u1"), {
+    bio: "Admin profile update",
+    updatedAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(doc(db, "users/u1"), {
+    role: "user",
+    updatedAt: serverTimestamp(),
+  }));
+});
+
 test("profile immutable fields and deletion are protected", async () => {
   await seed("users/u1", canonicalUser("u1"));
   const db = testEnv.authenticatedContext("u1").firestore();

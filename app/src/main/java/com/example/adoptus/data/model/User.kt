@@ -25,12 +25,14 @@ data class User(
             return User(
                 uid = documentId,
                 username = map["username"] as? String ?: "",
-                fullName = map["fullName"] as? String
-                    ?: map["full_name"] as? String
-                    ?: "",
-                photoUrl = map["photoUrl"] as? String
-                    ?: map["photo_url"] as? String
-                    ?: "",
+                fullName = firstNonBlank(
+                    map["fullName"] as? String,
+                    map["full_name"] as? String
+                ),
+                photoUrl = firstNonBlank(
+                    map["photoUrl"] as? String,
+                    map["photo_url"] as? String
+                ),
                 bio = map["bio"] as? String ?: "",
                 city = map["city"] as? String ?: "",
                 whatsapp = map["whatsapp"] as? String ?: "",
@@ -89,6 +91,12 @@ data class User(
             return normalized.takeIf { it.length >= 3 }
                 ?: "user_${uid.take(8)}"
         }
+
+        fun isValidUsername(value: String): Boolean =
+            value.length in 3..30 && value.none(Char::isWhitespace)
+
+        private fun firstNonBlank(vararg values: String?): String =
+            values.firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
         private val LEGACY_FIELDS = setOf(
             "id",

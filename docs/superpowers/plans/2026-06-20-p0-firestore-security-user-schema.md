@@ -8,6 +8,17 @@
 
 **Tech Stack:** Kotlin, Firebase Authentication, Cloud Firestore, Firebase CLI, Firebase Emulator Suite, Node.js, Firebase Admin SDK, `@firebase/rules-unit-testing`, JUnit 4.
 
+## Post-review Amendment
+
+The reviewed implementation supersedes older examples later in this plan:
+
+- Migration validates every proposed canonical document before the first write.
+- Writes use each snapshot's `updateTime` as a precondition and report conflicts without overwriting concurrent changes.
+- Migration preserves recognized roles (`user`, `admin`, `moderator`) and rejects unknown roles for manual review.
+- Dry-run output contains field-level diffs with email and WhatsApp values redacted.
+- Transitional `users` reads are owner-only while legacy email may still exist.
+- Registration rolls back the new Auth user if profile creation fails; login and Setting recover a missing profile.
+
 ---
 
 ## Operational Urgency

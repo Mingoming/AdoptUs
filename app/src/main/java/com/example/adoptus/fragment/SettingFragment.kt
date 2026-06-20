@@ -81,12 +81,8 @@ class SettingFragment : Fragment() {
                 tilUsername.error = "Username is required"
                 return@setOnClickListener
             }
-            if (username.length !in 3..30) {
-                tilUsername.error = "Username must be 3 to 30 characters"
-                return@setOnClickListener
-            }
-            if (username.contains(" ")) {
-                tilUsername.error = "Username cannot contain spaces"
+            if (!User.isValidUsername(username)) {
+                tilUsername.error = "Username must be 3-30 characters without whitespace"
                 return@setOnClickListener
             }
             if (fullName.isEmpty()) {
@@ -187,7 +183,34 @@ class SettingFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val doc = db.collection("users").document(uid).get().await()
-                val user = User.fromMap(doc.id, doc.data.orEmpty())
+                val currentUser = auth.currentUser ?: return@launch
+                val user = if (doc.exists()) {
+                    User.fromMap(doc.id, doc.data.orEmpty())
+                } else {
+                    val username = User.normalizeUsername(
+                        currentUser.displayName
+                            ?: currentUser.email?.substringBefore("@")
+                            ?: "",
+                        uid
+                    )
+                    val profile = User.newDocumentMap(
+                        uid = uid,
+                        username = username,
+                        fullName = currentUser.displayName
+                            ?.trim()
+                            .orEmpty()
+                            .ifBlank { username }
+                            .take(80),
+                        photoUrl = currentUser.photoUrl
+                            ?.toString()
+                            .orEmpty()
+                            .take(2048),
+                        createdAt = FieldValue.serverTimestamp(),
+                        updatedAt = FieldValue.serverTimestamp()
+                    )
+                    db.collection("users").document(uid).set(profile).await()
+                    User.fromMap(uid, profile)
+                }
                 etFullName.setText(user.fullName)
                 etUsername.setText(user.username)
                 etBio.setText(user.bio)

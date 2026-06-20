@@ -19,31 +19,23 @@ class AuthRepository {
         fullName: String,
         username: String
     ): Result<FirebaseUser> {
-        return try {
-            val result = auth
-                .createUserWithEmailAndPassword(email, password)
-                .await()
-
-            val uid = result.user!!.uid
-
-            val userData = User.newDocumentMap(
-                uid = uid,
-                username = username,
-                fullName = fullName,
-                photoUrl = "",
-                createdAt = FieldValue.serverTimestamp(),
-                updatedAt = FieldValue.serverTimestamp()
-            )
-
-            db.collection("users")
-                .document(uid)
-                .set(userData)
-                .await()
-
-            Result.success(result.user!!)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        return registerWithProfile(
+            createAuthUser = {
+                auth.createUserWithEmailAndPassword(email, password)
+                    .await()
+                    .user
+                    ?: throw IllegalStateException("Firebase Auth returned no user")
+            },
+            writeProfile = { user ->
+                db.collection("users")
+                    .document(user.uid)
+                    .set(newProfileDocument(user, fullName, username))
+                    .await()
+            },
+            rollbackAuthUser = { user ->
+                user.delete().await()
+            }
+        )
     }
 
     suspend fun login(
@@ -54,7 +46,10 @@ class AuthRepository {
             val result = auth
                 .signInWithEmailAndPassword(email, password)
                 .await()
-            Result.success(result.user!!)
+            val user = result.user
+                ?: return Result.failure(IllegalStateException("Firebase Auth returned no user"))
+            ensureProfileExists(user)
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -66,30 +61,7 @@ class AuthRepository {
             val result = auth.signInWithCredential(credential).await()
             val user = result.user!!
 
-            // Simpan ke Firestore kalau user baru
-            val docRef = db.collection("users").document(user.uid)
-            val doc = docRef.get().await()
-            if (!doc.exists()) {
-                val username = User.normalizeUsername(
-                    value = user.displayName
-                        ?: user.email?.substringBefore("@")
-                        ?: "",
-                    uid = user.uid
-                )
-                val userData = User.newDocumentMap(
-                    uid = user.uid,
-                    username = username,
-                    fullName = user.displayName
-                        ?.trim()
-                        .orEmpty()
-                        .ifBlank { username }
-                        .take(80),
-                    photoUrl = user.photoUrl?.toString().orEmpty().take(2048),
-                    createdAt = FieldValue.serverTimestamp(),
-                    updatedAt = FieldValue.serverTimestamp()
-                )
-                docRef.set(userData).await()
-            }
+            ensureProfileExists(user)
 
             Result.success(user)
         } catch (e: Exception) {
@@ -100,4 +72,37 @@ class AuthRepository {
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
     fun logout() = auth.signOut()
+
+    private suspend fun ensureProfileExists(user: FirebaseUser) {
+        val docRef = db.collection("users").document(user.uid)
+        if (!docRef.get().await().exists()) {
+            val username = recoveryUsername(user)
+            docRef.set(newProfileDocument(
+                user = user,
+                fullName = user.displayName.orEmpty().ifBlank { username },
+                username = username
+            )).await()
+        }
+    }
+
+    private fun newProfileDocument(
+        user: FirebaseUser,
+        fullName: String,
+        username: String
+    ): Map<String, Any> = User.newDocumentMap(
+        uid = user.uid,
+        username = User.normalizeUsername(username, user.uid),
+        fullName = fullName.trim().ifBlank { username }.take(80),
+        photoUrl = user.photoUrl?.toString().orEmpty().take(2048),
+        createdAt = FieldValue.serverTimestamp(),
+        updatedAt = FieldValue.serverTimestamp()
+    )
+
+    private fun recoveryUsername(user: FirebaseUser): String =
+        User.normalizeUsername(
+            value = user.displayName
+                ?: user.email?.substringBefore("@")
+                ?: "",
+            uid = user.uid
+        )
 }

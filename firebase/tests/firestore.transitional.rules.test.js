@@ -81,15 +81,17 @@ test("unauthenticated clients cannot read users or posts", async () => {
   await assertFails(getDoc(doc(db, "posts/p1")));
 });
 
-test("authenticated clients can read legacy profiles and posts", async () => {
+test("legacy profiles are private to their owner during transition", async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), "users/u1"), legacyUser("u1"));
     await setDoc(doc(context.firestore(), "posts/p1"), post("p1", "u1"));
   });
 
-  const db = testEnv.authenticatedContext("u2").firestore();
-  await assertSucceeds(getDoc(doc(db, "users/u1")));
-  await assertSucceeds(getDoc(doc(db, "posts/p1")));
+  const ownerDb = testEnv.authenticatedContext("u1").firestore();
+  const otherDb = testEnv.authenticatedContext("u2").firestore();
+  await assertSucceeds(getDoc(doc(ownerDb, "users/u1")));
+  await assertFails(getDoc(doc(otherDb, "users/u1")));
+  await assertSucceeds(getDoc(doc(otherDb, "posts/p1")));
 });
 
 test("users can only write their own profile", async () => {
@@ -105,6 +107,36 @@ test("profile owner cannot elevate their role during transition", async () => {
   await assertSucceeds(setDoc(doc(ownerDb, "users/u1"), legacyUser("u1")));
 
   await assertFails(updateDoc(doc(ownerDb, "users/u1"), { role: "admin" }));
+});
+
+test("profile owner can update while preserving a recognized privileged role", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "users/u1"), {
+      ...legacyUser("u1"),
+      role: "admin",
+    });
+  });
+  const ownerDb = testEnv.authenticatedContext("u1").firestore();
+
+  await assertSucceeds(updateDoc(doc(ownerDb, "users/u1"), {
+    bio: "Admin profile update",
+  }));
+  await assertFails(updateDoc(doc(ownerDb, "users/u1"), { role: "user" }));
+});
+
+test("owner can add canonical fields to an existing legacy profile", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "users/u1"), legacyUser("u1"));
+  });
+  const ownerDb = testEnv.authenticatedContext("u1").firestore();
+
+  await assertSucceeds(updateDoc(doc(ownerDb, "users/u1"), {
+    fullName: "Legacy User",
+    bio: "Updated",
+    city: "Mataram",
+    whatsapp: "628123",
+    updatedAt: serverTimestamp(),
+  }));
 });
 
 test("post ownership is enforced", async () => {

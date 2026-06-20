@@ -19,7 +19,7 @@ uid, username, fullName, photoUrl, bio, city,
 whatsapp, role, createdAt, updatedAt
 ```
 
-`uid`, `role`, dan `createdAt` immutable. Email tetap menjadi data Firebase Authentication dan dihapus dari dokumen profil Firestore.
+`uid`, `role`, dan `createdAt` immutable. Role yang dikenali adalah `user`, `admin`, dan `moderator`; client hanya dapat membuat role `user`, sedangkan migrasi mempertahankan role valid yang sudah ada. Email tetap menjadi data Firebase Authentication dan dihapus dari dokumen profil Firestore.
 
 ### 2b. Backward compatibility
 
@@ -41,11 +41,12 @@ Strict rules tidak boleh dideploy sebelum verification menghasilkan nol dokumen 
 
 ### 2d. Migrasi production
 
-Migration menggunakan Firebase Admin SDK dan full document replacement untuk menghapus field legacy serta email. Script memerlukan credential eksplisit di luar emulator. Write production juga memerlukan `--confirm-production`, sehingga command biasa tidak dapat mengubah production tanpa sengaja.
+Migration menggunakan Firebase Admin SDK dengan update precondition berdasarkan `updateTime` snapshot. Semua hasil transformasi divalidasi sebelum write pertama, field legacy dan email dihapus secara eksplisit, dan dokumen yang berubah setelah snapshot dilaporkan sebagai conflict tanpa ditimpa. Dry-run menampilkan diff per field dengan email dan WhatsApp disensor. Script memerlukan credential eksplisit di luar emulator. Write production juga memerlukan `--confirm-production`, sehingga command biasa tidak dapat mengubah production tanpa sengaja.
 
 ### 2e. Aturan akses
 
-* `users` dan `posts` hanya dapat dibaca user terautentikasi.
+* Selama transisi, dokumen `users` hanya dapat dibaca pemiliknya agar email legacy tidak bocor.
+* Setelah migrasi dan strict rules aktif, dokumen `users` canonical dan `posts` dapat dibaca user terautentikasi.
 * User hanya dapat membuat atau memperbarui profilnya sendiri.
 * Penghapusan profil langsung dari client ditolak.
 * Post hanya dapat dibuat, diubah, atau dihapus pemiliknya.
@@ -66,7 +67,7 @@ Migration menggunakan Firebase Admin SDK dan full document replacement untuk men
 * Client lama yang masih menulis schema legacy tidak kompatibel dengan strict rules.
 * Production rollout membutuhkan backup, service-account credential, dan monitoring manual.
 * Username global uniqueness belum dijamin.
-* Profile masih dapat dibaca seluruh user terautentikasi karena feed/detail membutuhkan public owner data.
+* Transitional rules membatasi profile ke owner, sehingga fitur public profile lintas-user harus menunggu data legacy bersih dan strict rollout.
 
 ## 4. Rollback
 

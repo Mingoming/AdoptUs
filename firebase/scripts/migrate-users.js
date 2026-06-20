@@ -9,20 +9,39 @@ async function loadUsers(db) {
   return snapshot.docs.map((document) => ({
     id: document.id,
     data: document.data(),
+    updateTime: document.updateTime,
   }));
 }
 
-async function writeInBatches(db, changes) {
-  for (let offset = 0; offset < changes.length; offset += 400) {
-    const batch = db.batch();
-    const chunk = changes.slice(offset, offset + 400);
+async function writeWithPreconditions(db, changes, deleteField) {
+  const written = [];
+  const conflicts = [];
 
-    for (const change of chunk) {
-      batch.set(db.collection("users").doc(change.id), change.data);
+  for (const change of changes) {
+    const updateData = { ...change.data };
+    for (const field of change.removeFields) {
+      updateData[field] = deleteField();
     }
 
-    await batch.commit();
+    try {
+      await db.collection("users").doc(change.id).update(
+        updateData,
+        { lastUpdateTime: change.updateTime }
+      );
+      written.push(change.id);
+    } catch (error) {
+      if (error.code === 9 || error.code === "failed-precondition") {
+        conflicts.push({
+          id: change.id,
+          reason: "document changed after migration snapshot",
+        });
+        continue;
+      }
+      throw error;
+    }
   }
+
+  return { written, conflicts };
 }
 
 async function main() {
@@ -31,6 +50,8 @@ async function main() {
     isEmulator,
     projectId,
     serverTimestamp,
+    deleteField,
+    isTimestamp,
   } = initializeFirestore();
 
   if (!dryRun && !isEmulator && !confirmedProduction) {
@@ -44,11 +65,27 @@ async function main() {
     documents,
     dryRun,
     serverTimestamp,
-    writeChanges: (changes) => writeInBatches(db, changes),
+    isTimestamp,
+    writeChanges: (changes) => writeWithPreconditions(
+      db,
+      changes,
+      deleteField
+    ),
   });
 
   for (const change of result.changes) {
-    console.log(`${dryRun ? "[DRY]" : "[WRITE]"} users/${change.id}`);
+    console.log(JSON.stringify({
+      operation: dryRun ? "DRY_RUN" : "WRITE",
+      path: `users/${change.id}`,
+      diff: change.diff,
+    }));
+  }
+  for (const conflict of result.conflicts) {
+    console.error(JSON.stringify({
+      operation: "CONFLICT",
+      path: `users/${conflict.id}`,
+      reason: conflict.reason,
+    }));
   }
 
   console.log(JSON.stringify({
@@ -57,9 +94,20 @@ async function main() {
     dryRun: result.dryRun,
     ...result.report,
   }, null, 2));
+
+  if (result.conflicts.length > 0) {
+    process.exitCode = 2;
+  }
 }
 
-main().catch((error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = {
+  loadUsers,
+  writeWithPreconditions,
+};

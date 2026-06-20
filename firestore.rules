@@ -21,6 +21,10 @@ service cloud.firestore {
         && !value.matches('.*\\s+.*');
     }
 
+    function validRole(value) {
+      return value in ['user', 'admin', 'moderator'];
+    }
+
     function validUserKeys() {
       return request.resource.data.keys().hasAll([
           'uid',
@@ -58,7 +62,7 @@ service cloud.firestore {
         && validString(data.bio, 300)
         && validString(data.city, 80)
         && validString(data.whatsapp, 30)
-        && data.role == 'user'
+        && validRole(data.role)
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
@@ -66,6 +70,7 @@ service cloud.firestore {
     function validUserCreate(uid) {
       return validUserKeys()
         && validUserValues(uid)
+        && request.resource.data.role == 'user'
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
     }

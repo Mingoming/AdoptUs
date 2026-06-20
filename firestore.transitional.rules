@@ -10,6 +10,10 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function validRole(value) {
+      return value in ['user', 'admin', 'moderator'];
+    }
+
     function ownsExistingPost() {
       return signedIn() && resource.data.userId == request.auth.uid;
     }
@@ -21,11 +25,11 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if signedIn();
+      allow read: if isOwner(uid);
       allow create: if isOwner(uid)
         && request.resource.data.role == 'user';
       allow update: if isOwner(uid)
-        && resource.data.role == 'user'
+        && validRole(resource.data.role)
         && request.resource.data.role == resource.data.role;
       allow delete: if false;
     }
