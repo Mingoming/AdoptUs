@@ -13,15 +13,18 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 * Menambahkan unit dan emulator integration tests untuk migration yang idempotent.
 * Menambahkan ADR `0006-firestore-security-user-schema.md`.
 * Menambahkan rollback Firebase Auth bila penulisan profil saat register gagal dan recovery profil yang hilang saat login/Setting.
+* Menambahkan status migration per dokumen untuk planned, skipped, written, conflict, dan failed.
+* Menambahkan review dan allowlist eksplisit untuk UID dengan role admin atau moderator.
 
 ### Changed
 
 * Menormalisasi model user ke field canonical `uid`, `username`, `fullName`, `photoUrl`, `bio`, `city`, `whatsapp`, `role`, `createdAt`, dan `updatedAt`.
 * Register email/password dan Google sekarang menulis schema canonical.
 * Setting membaca schema canonical maupun legacy dan hanya menulis field canonical.
-* Migration memvalidasi seluruh transformasi sebelum write, memakai precondition `updateTime`, mempertahankan role valid, dan menampilkan diff dry-run dengan PII tersensor.
+* Migration memvalidasi seluruh transformasi sebelum write, memakai precondition `updateTime`, mempertahankan partial outcome, dan menampilkan diff metadata tanpa nilai profil.
 * Transitional rules membatasi pembacaan dokumen user ke owner serta mempertahankan role valid yang immutable.
-* Validasi username Android sekarang menolak seluruh karakter whitespace.
+* Recovery profil memakai transaction create-if-missing agar profil yang muncul bersamaan tidak tertimpa defaults.
+* Validasi username Android sekarang menolak seluruh karakter whitespace pada input asli tanpa auto-trim.
 * Memperbarui README agar sesuai dengan kode terbaru: splash screen, Navigation Component, Firestore feed, AddPost, Setting, dan known gaps.
 * Merapikan CHANGELOG agar memakai teks ASCII yang konsisten dan tidak menampilkan karakter encoding rusak.
 * Menambahkan ADR `0005-current-implementation-baseline.md` sebagai baseline status implementasi terbaru.

@@ -125,6 +125,16 @@ class UserTest {
     }
 
     @Test
+    fun validatedUsernameInputRejectsWhitespaceInOriginalInput() {
+        assertEquals(null, User.validatedUsernameInput(" john"))
+        assertEquals(null, User.validatedUsernameInput("john "))
+        assertEquals(null, User.validatedUsernameInput("john doe"))
+        assertEquals(null, User.validatedUsernameInput("john\tdoe"))
+        assertEquals(null, User.validatedUsernameInput("john\ndoe"))
+        assertEquals("john_doe", User.validatedUsernameInput("john_doe"))
+    }
+
+    @Test
     fun profileUpdateMapContainsOnlyFieldsEditedBySettings() {
         val updatedAt = Any()
         val document = User.profileUpdateMap(

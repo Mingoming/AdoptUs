@@ -109,19 +109,25 @@ test("profile owner cannot elevate their role during transition", async () => {
   await assertFails(updateDoc(doc(ownerDb, "users/u1"), { role: "admin" }));
 });
 
-test("profile owner can update while preserving a recognized privileged role", async () => {
-  await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), "users/u1"), {
-      ...legacyUser("u1"),
-      role: "admin",
+test("profile owner can update while preserving admin and moderator roles", async () => {
+  for (const role of ["admin", "moderator"]) {
+    const uid = `${role}-1`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `users/${uid}`), {
+        ...legacyUser(uid),
+        role,
+      });
     });
-  });
-  const ownerDb = testEnv.authenticatedContext("u1").firestore();
+    const ownerDb = testEnv.authenticatedContext(uid).firestore();
 
-  await assertSucceeds(updateDoc(doc(ownerDb, "users/u1"), {
-    bio: "Admin profile update",
-  }));
-  await assertFails(updateDoc(doc(ownerDb, "users/u1"), { role: "user" }));
+    await assertSucceeds(updateDoc(doc(ownerDb, `users/${uid}`), {
+      bio: `${role} profile update`,
+    }));
+    await assertFails(updateDoc(
+      doc(ownerDb, `users/${uid}`),
+      { role: "user" }
+    ));
+  }
 });
 
 test("owner can add canonical fields to an existing legacy profile", async () => {

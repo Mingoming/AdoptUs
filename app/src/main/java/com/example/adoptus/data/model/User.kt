@@ -95,6 +95,9 @@ data class User(
         fun isValidUsername(value: String): Boolean =
             value.length in 3..30 && value.none(Char::isWhitespace)
 
+        fun validatedUsernameInput(value: String): String? =
+            value.takeIf(::isValidUsername)
+
         private fun firstNonBlank(vararg values: String?): String =
             values.firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 

@@ -4,6 +4,10 @@ const {
   executeMigration,
   verifyUsers,
 } = require("../scripts/user-migration-runner");
+const {
+  parseAllowedPrivilegedUids,
+  writeWithPreconditions,
+} = require("../scripts/migrate-users");
 
 const timestamp = { timestamp: true };
 const legacyDocument = {
@@ -18,6 +22,19 @@ const legacyDocument = {
     created_at: timestamp,
   },
 };
+
+test("privileged UID allowlist parser accepts repeated explicit arguments", () => {
+  assert.deepEqual(
+    [...parseAllowedPrivilegedUids([
+      "node",
+      "migrate-users.js",
+      "--allow-privileged-uid=admin-1",
+      "--dry-run",
+      "--allow-privileged-uid=moderator-1",
+    ])],
+    ["admin-1", "moderator-1"]
+  );
+});
 
 test("dry-run reports changes without writing", async () => {
   let writes = 0;
@@ -100,6 +117,167 @@ test("migration reports update-time conflicts without claiming success", async (
   assert.equal(result.report.written, 0);
   assert.equal(result.report.conflicts, 1);
   assert.equal(result.conflicts[0].id, "u1");
+});
+
+test("writer records success conflict success independently", async () => {
+  const outcomes = {
+    u1: "success",
+    u2: "conflict",
+    u3: "success",
+  };
+  const db = {
+    collection: () => ({
+      doc: (id) => ({
+        update: async () => {
+          if (outcomes[id] === "conflict") {
+            const error = new Error("stale snapshot");
+            error.code = 9;
+            throw error;
+          }
+        },
+      }),
+    }),
+  };
+  const changes = ["u1", "u2", "u3"].map((id) => ({
+    id,
+    data: { uid: id },
+    removeFields: [],
+    updateTime: `version-${id}`,
+  }));
+
+  const result = await writeWithPreconditions(db, changes, () => null);
+
+  assert.deepEqual(result.written, ["u1", "u3"]);
+  assert.deepEqual(result.conflicts.map((item) => item.id), ["u2"]);
+  assert.deepEqual(result.failed, []);
+});
+
+test("writer retains partial success when an unexpected failure aborts remaining writes", async () => {
+  const attempted = [];
+  const db = {
+    collection: () => ({
+      doc: (id) => ({
+        update: async () => {
+          attempted.push(id);
+          if (id === "u2") {
+            const error = new Error("private backend detail");
+            error.code = "unavailable";
+            throw error;
+          }
+        },
+      }),
+    }),
+  };
+  const changes = ["u1", "u2", "u3"].map((id) => ({
+    id,
+    data: { uid: id },
+    removeFields: [],
+    updateTime: `version-${id}`,
+  }));
+
+  const result = await writeWithPreconditions(db, changes, () => null);
+
+  assert.deepEqual(attempted, ["u1", "u2"]);
+  assert.deepEqual(result.written, ["u1"]);
+  assert.deepEqual(result.conflicts, []);
+  assert.deepEqual(result.failed, [{
+    id: "u2",
+    code: "unavailable",
+    reason: "write failed",
+  }]);
+});
+
+test("migration report retains written and failed document outcomes", async () => {
+  const result = await executeMigration({
+    documents: [
+      legacyDocument,
+      {
+        ...legacyDocument,
+        id: "u2",
+        updateTime: "version-2",
+      },
+      {
+        ...legacyDocument,
+        id: "u3",
+        updateTime: "version-3",
+      },
+    ],
+    dryRun: false,
+    serverTimestamp: () => timestamp,
+    isTimestamp: () => true,
+    writeChanges: async () => ({
+      written: ["u1"],
+      conflicts: [],
+      failed: [{
+        id: "u2",
+        code: "unavailable",
+        reason: "write failed",
+      }],
+    }),
+  });
+
+  assert.deepEqual(result.written, ["u1"]);
+  assert.deepEqual(result.failed.map((item) => item.id), ["u2"]);
+  assert.equal(result.report.planned, 3);
+  assert.equal(result.report.written, 1);
+  assert.equal(result.report.failed, 1);
+});
+
+test("dry-run reports privileged roles but write mode requires an allowlist", async () => {
+  const privilegedDocument = {
+    id: "admin-1",
+    updateTime: "version-admin",
+    data: {
+      username: "admin_user",
+      full_name: "Admin User",
+      role: "admin",
+      created_at: timestamp,
+    },
+  };
+
+  const dryRunResult = await executeMigration({
+    documents: [privilegedDocument],
+    dryRun: true,
+    serverTimestamp: () => timestamp,
+    isTimestamp: () => true,
+    writeChanges: async () => {
+      throw new Error("dry-run must not write");
+    },
+  });
+  assert.deepEqual(dryRunResult.privilegedRoleReview, [{
+    id: "admin-1",
+    role: "admin",
+  }]);
+
+  await assert.rejects(
+    executeMigration({
+      documents: [privilegedDocument],
+      dryRun: false,
+      serverTimestamp: () => timestamp,
+      isTimestamp: () => true,
+      writeChanges: async () => ({
+        written: ["admin-1"],
+        conflicts: [],
+        failed: [],
+      }),
+    }),
+    /privileged role review/
+  );
+
+  const allowedResult = await executeMigration({
+    documents: [privilegedDocument],
+    dryRun: false,
+    serverTimestamp: () => timestamp,
+    isTimestamp: () => true,
+    allowedPrivilegedUids: new Set(["admin-1"]),
+    writeChanges: async () => ({
+      written: ["admin-1"],
+      conflicts: [],
+      failed: [],
+    }),
+  });
+  assert.equal(allowedResult.report.written, 1);
+  assert.equal(allowedResult.report.privilegedRoleReview, 0);
 });
 
 test("verification reports invalid documents without modifying them", () => {

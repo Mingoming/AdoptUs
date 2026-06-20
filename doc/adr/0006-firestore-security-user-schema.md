@@ -19,7 +19,7 @@ uid, username, fullName, photoUrl, bio, city,
 whatsapp, role, createdAt, updatedAt
 ```
 
-`uid`, `role`, dan `createdAt` immutable. Role yang dikenali adalah `user`, `admin`, dan `moderator`; client hanya dapat membuat role `user`, sedangkan migrasi mempertahankan role valid yang sudah ada. Email tetap menjadi data Firebase Authentication dan dihapus dari dokumen profil Firestore.
+`uid`, `role`, dan `createdAt` immutable. Role yang dikenali adalah `user`, `admin`, dan `moderator`; client hanya dapat membuat role `user`. Role privileged tidak otomatis dipercaya karena production pernah memakai rules terbuka: dry-run memasukkannya ke `PRIVILEGED_ROLE_REVIEW` dan write membutuhkan allowlist UID eksplisit. Email tetap menjadi data Firebase Authentication dan dihapus dari dokumen profil Firestore.
 
 ### 2b. Backward compatibility
 
@@ -41,13 +41,14 @@ Strict rules tidak boleh dideploy sebelum verification menghasilkan nol dokumen 
 
 ### 2d. Migrasi production
 
-Migration menggunakan Firebase Admin SDK dengan update precondition berdasarkan `updateTime` snapshot. Semua hasil transformasi divalidasi sebelum write pertama, field legacy dan email dihapus secara eksplisit, dan dokumen yang berubah setelah snapshot dilaporkan sebagai conflict tanpa ditimpa. Dry-run menampilkan diff per field dengan email dan WhatsApp disensor. Script memerlukan credential eksplisit di luar emulator. Write production juga memerlukan `--confirm-production`, sehingga command biasa tidak dapat mengubah production tanpa sengaja.
+Migration menggunakan Firebase Admin SDK dengan update precondition berdasarkan `updateTime` snapshot. Semua hasil transformasi divalidasi sebelum write pertama, field legacy dan email dihapus secara eksplisit, dan dokumen yang berubah setelah snapshot dilaporkan sebagai conflict tanpa ditimpa. Output membedakan planned, skipped, written, conflict, dan failed per dokumen serta mempertahankan partial outcome. Dry-run hanya menampilkan nama field, operasi, dan tipe tanpa nilai profil. Script memerlukan credential eksplisit di luar emulator. Write production juga memerlukan `--confirm-production`, sehingga command biasa tidak dapat mengubah production tanpa sengaja.
 
 ### 2e. Aturan akses
 
 * Selama transisi, dokumen `users` hanya dapat dibaca pemiliknya agar email legacy tidak bocor.
 * Setelah migrasi dan strict rules aktif, dokumen `users` canonical dan `posts` dapat dibaca user terautentikasi.
 * User hanya dapat membuat atau memperbarui profilnya sendiri.
+* Recovery profil client memakai transaction create-if-missing dan selalu membuat role `user`.
 * Penghapusan profil langsung dari client ditolak.
 * Post hanya dapat dibuat, diubah, atau dihapus pemiliknya.
 * Unknown collections menggunakan deny-by-default.

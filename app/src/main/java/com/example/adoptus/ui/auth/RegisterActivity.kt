@@ -21,7 +21,7 @@ class RegisterActivity : AppCompatActivity() {
 
         binding.btnRegister.setOnClickListener {
             val fullName = binding.etFullName.text.toString().trim()
-            val username = binding.etUsername.text.toString().trim()
+            val username = binding.etUsername.text.toString()
             val email    = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
 
@@ -39,7 +39,7 @@ class RegisterActivity : AppCompatActivity() {
             if (username.isEmpty()) {
                 binding.tilUsername.error = "Username is required."
                 return@setOnClickListener
-            } else if (!User.isValidUsername(username)) {
+            } else if (User.validatedUsernameInput(username) == null) {
                 binding.tilUsername.error = "Username must be 3-30 characters without whitespace."
                 return@setOnClickListener
             } else {

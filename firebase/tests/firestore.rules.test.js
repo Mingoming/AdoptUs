@@ -130,21 +130,24 @@ test("profile owner can update editable canonical fields", async () => {
   }));
 });
 
-test("profile owner preserves an existing recognized privileged role", async () => {
-  await seed("users/u1", {
-    ...canonicalUser("u1"),
-    role: "admin",
-  });
-  const db = testEnv.authenticatedContext("u1").firestore();
+test("profile owner preserves existing admin and moderator roles", async () => {
+  for (const role of ["admin", "moderator"]) {
+    const uid = `${role}-1`;
+    await seed(`users/${uid}`, {
+      ...canonicalUser(uid),
+      role,
+    });
+    const db = testEnv.authenticatedContext(uid).firestore();
 
-  await assertSucceeds(updateDoc(doc(db, "users/u1"), {
-    bio: "Admin profile update",
-    updatedAt: serverTimestamp(),
-  }));
-  await assertFails(updateDoc(doc(db, "users/u1"), {
-    role: "user",
-    updatedAt: serverTimestamp(),
-  }));
+    await assertSucceeds(updateDoc(doc(db, `users/${uid}`), {
+      bio: `${role} profile update`,
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(doc(db, `users/${uid}`), {
+      role: "user",
+      updatedAt: serverTimestamp(),
+    }));
+  }
 });
 
 test("profile immutable fields and deletion are protected", async () => {

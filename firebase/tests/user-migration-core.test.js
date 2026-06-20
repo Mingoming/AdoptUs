@@ -89,6 +89,52 @@ test("canonicalizeUser preserves recognized privileged roles", () => {
   assert.equal(result.role, "admin");
 });
 
+test("createMigrationPlan requires privileged roles to be allowlisted", () => {
+  const privileged = {
+    username: "admin_user",
+    fullName: "Admin User",
+    photoUrl: "",
+    bio: "",
+    city: "",
+    whatsapp: "",
+    role: "admin",
+    createdAt,
+    updatedAt,
+  };
+
+  const reviewPlan = createMigrationPlan(
+    [{ id: "admin-1", data: privileged, updateTime: "v1" }],
+    () => updatedAt,
+    isTimestamp
+  );
+  assert.deepEqual(reviewPlan.privilegedRoleReview, [{
+    id: "admin-1",
+    role: "admin",
+  }]);
+
+  const allowedPlan = createMigrationPlan(
+    [{ id: "admin-1", data: privileged, updateTime: "v1" }],
+    () => updatedAt,
+    isTimestamp,
+    { allowedPrivilegedUids: new Set(["admin-1"]) }
+  );
+  assert.deepEqual(allowedPlan.privilegedRoleReview, []);
+
+  const moderatorPlan = createMigrationPlan(
+    [{
+      id: "moderator-1",
+      data: { ...privileged, role: "moderator" },
+      updateTime: "v2",
+    }],
+    () => updatedAt,
+    isTimestamp
+  );
+  assert.deepEqual(moderatorPlan.privilegedRoleReview, [{
+    id: "moderator-1",
+    role: "moderator",
+  }]);
+});
+
 test("createMigrationPlan is dry-run friendly and idempotent", () => {
   const legacy = {
     id: "u1",
@@ -123,10 +169,13 @@ test("createMigrationPlan is dry-run friendly and idempotent", () => {
   assert.deepEqual(plan.report, {
     scanned: 2,
     changed: 1,
+    planned: 1,
     skipped: 1,
     invalid: 0,
+    privilegedRoleReview: 0,
   });
   assert.deepEqual(plan.changes.map((change) => change.id), ["u1"]);
+  assert.deepEqual(plan.skippedIds, ["u2"]);
 
   const secondPlan = createMigrationPlan(
     plan.changes.map((change) => ({
@@ -183,33 +232,70 @@ test("createMigrationPlan sends unknown roles to manual review", () => {
   assert.ok(plan.invalid[0].errors.includes("role is not recognized"));
 });
 
-test("formatMigrationDiff redacts PII and reports added changed removed fields", () => {
+test("formatMigrationDiff reports only field operations and types without values", () => {
   const current = {
     email: "owner@example.com",
     whatsapp: "08123456789",
     full_name: "Legacy Owner",
+    photo_url: "https://example.com/private-avatar.jpg",
+    bio: "Private biography",
+    city: "Private City",
+    unexpected: {
+      secret: "nested-private-value",
+    },
     role: "user",
   };
   const next = {
     uid: "u1",
     whatsapp: "628123456789",
     fullName: "Legacy Owner",
+    photoUrl: "https://example.com/private-avatar.jpg",
+    bio: "Changed private biography",
+    city: "Private City",
     role: "user",
   };
 
   const diff = formatMigrationDiff(current, next);
+  const serialized = JSON.stringify(diff);
 
-  assert.deepEqual(diff.added.map((entry) => entry.field), ["fullName", "uid"]);
-  assert.deepEqual(diff.removed.map((entry) => entry.field), ["email", "full_name"]);
-  assert.equal(
-    diff.removed.find((entry) => entry.field === "email").before,
-    "[REDACTED]"
-  );
-  assert.deepEqual(diff.changed, [{
-    field: "whatsapp",
-    before: "[REDACTED]",
-    after: "[REDACTED]",
-  }]);
+  assert.deepEqual(diff.added, [
+    { field: "fullName", operation: "added", afterType: "string" },
+    { field: "photoUrl", operation: "added", afterType: "string" },
+    { field: "uid", operation: "added", afterType: "string" },
+  ]);
+  assert.deepEqual(diff.changed, [
+    {
+      field: "bio",
+      operation: "changed",
+      beforeType: "string",
+      afterType: "string",
+    },
+    {
+      field: "whatsapp",
+      operation: "changed",
+      beforeType: "string",
+      afterType: "string",
+    },
+  ]);
+  assert.deepEqual(diff.removed, [
+    { field: "email", operation: "removed", beforeType: "string" },
+    { field: "full_name", operation: "removed", beforeType: "string" },
+    { field: "photo_url", operation: "removed", beforeType: "string" },
+    { field: "unexpected", operation: "removed", beforeType: "object" },
+  ]);
+  for (const sensitiveValue of [
+    "owner@example.com",
+    "08123456789",
+    "628123456789",
+    "Legacy Owner",
+    "private-avatar.jpg",
+    "Private biography",
+    "Changed private biography",
+    "Private City",
+    "nested-private-value",
+  ]) {
+    assert.equal(serialized.includes(sensitiveValue), false);
+  }
 });
 
 test("validateCanonicalUser rejects legacy or unexpected fields", () => {

@@ -238,7 +238,17 @@ node scripts/migrate-users.js --confirm-production
 npm run verify:users
 ```
 
-Dry-run menampilkan diff field-level dengan email dan WhatsApp tersensor. Migration memvalidasi seluruh dokumen sebelum write pertama dan keluar dengan status conflict jika `updateTime` berubah; periksa serta ulangi dry-run untuk dokumen tersebut, jangan menimpanya manual.
+Dry-run hanya menampilkan nama field, jenis operasi, dan tipe data tanpa nilai profil. Output per dokumen membedakan `PLANNED`, `SKIPPED`, `WRITTEN`, `CONFLICT`, `FAILED`, dan `PRIVILEGED_ROLE_REVIEW`. Migration memvalidasi seluruh dokumen sebelum write pertama dan mempertahankan daftar partial success jika conflict atau failure terjadi.
+
+Dokumen dengan role `admin` atau `moderator` tidak boleh ditulis sebelum UID-nya diverifikasi manual. Setelah review, allowlist setiap UID secara eksplisit:
+
+```powershell
+node scripts/migrate-users.js --confirm-production `
+  --allow-privileged-uid=<VERIFIED_ADMIN_UID> `
+  --allow-privileged-uid=<VERIFIED_MODERATOR_UID>
+```
+
+Conflict `updateTime` tidak ditimpa; ulangi dry-run terhadap snapshot terbaru. Error write non-precondition menghentikan write berikutnya dan menghasilkan status `FAILED`.
 
 Jangan menjalankan migration production sebelum backup selesai dan output dry-run sudah diperiksa. Jika strict rules menolak operasi client yang valid, deploy kembali transitional rules, tambahkan regression test, lalu perbaiki strict rules. Jangan kembali ke rules terbuka.
 

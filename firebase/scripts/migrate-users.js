@@ -1,8 +1,18 @@
 const { initializeFirestore } = require("./firebase-admin-client");
 const { executeMigration } = require("./user-migration-runner");
 
+function parseAllowedPrivilegedUids(argumentsList) {
+  return new Set(
+    argumentsList
+      .filter((argument) => argument.startsWith("--allow-privileged-uid="))
+      .map((argument) => argument.slice("--allow-privileged-uid=".length))
+      .filter(Boolean)
+  );
+}
+
 const dryRun = process.argv.includes("--dry-run");
 const confirmedProduction = process.argv.includes("--confirm-production");
+const allowedPrivilegedUids = parseAllowedPrivilegedUids(process.argv);
 
 async function loadUsers(db) {
   const snapshot = await db.collection("users").get();
@@ -16,6 +26,7 @@ async function loadUsers(db) {
 async function writeWithPreconditions(db, changes, deleteField) {
   const written = [];
   const conflicts = [];
+  const failed = [];
 
   for (const change of changes) {
     const updateData = { ...change.data };
@@ -37,11 +48,16 @@ async function writeWithPreconditions(db, changes, deleteField) {
         });
         continue;
       }
-      throw error;
+      failed.push({
+        id: change.id,
+        code: error.code == null ? "unknown" : String(error.code),
+        reason: "write failed",
+      });
+      break;
     }
   }
 
-  return { written, conflicts };
+  return { written, conflicts, failed };
 }
 
 async function main() {
@@ -66,6 +82,7 @@ async function main() {
     dryRun,
     serverTimestamp,
     isTimestamp,
+    allowedPrivilegedUids,
     writeChanges: (changes) => writeWithPreconditions(
       db,
       changes,
@@ -75,9 +92,21 @@ async function main() {
 
   for (const change of result.changes) {
     console.log(JSON.stringify({
-      operation: dryRun ? "DRY_RUN" : "WRITE",
+      operation: "PLANNED",
       path: `users/${change.id}`,
       diff: change.diff,
+    }));
+  }
+  for (const id of result.skippedIds) {
+    console.log(JSON.stringify({
+      operation: "SKIPPED",
+      path: `users/${id}`,
+    }));
+  }
+  for (const id of result.written) {
+    console.log(JSON.stringify({
+      operation: "WRITTEN",
+      path: `users/${id}`,
     }));
   }
   for (const conflict of result.conflicts) {
@@ -85,6 +114,21 @@ async function main() {
       operation: "CONFLICT",
       path: `users/${conflict.id}`,
       reason: conflict.reason,
+    }));
+  }
+  for (const failure of result.failed) {
+    console.error(JSON.stringify({
+      operation: "FAILED",
+      path: `users/${failure.id}`,
+      code: failure.code,
+      reason: failure.reason,
+    }));
+  }
+  for (const review of result.privilegedRoleReview) {
+    console.warn(JSON.stringify({
+      operation: "PRIVILEGED_ROLE_REVIEW",
+      path: `users/${review.id}`,
+      role: review.role,
     }));
   }
 
@@ -95,7 +139,9 @@ async function main() {
     ...result.report,
   }, null, 2));
 
-  if (result.conflicts.length > 0) {
+  if (result.failed.length > 0) {
+    process.exitCode = 1;
+  } else if (result.conflicts.length > 0) {
     process.exitCode = 2;
   }
 }
@@ -109,5 +155,6 @@ if (require.main === module) {
 
 module.exports = {
   loadUsers,
+  parseAllowedPrivilegedUids,
   writeWithPreconditions,
 };

@@ -74,14 +74,16 @@ class AuthRepository {
     fun logout() = auth.signOut()
 
     private suspend fun ensureProfileExists(user: FirebaseUser) {
-        val docRef = db.collection("users").document(user.uid)
-        if (!docRef.get().await().exists()) {
+        createProfileIfMissing(
+            db = db,
+            uid = user.uid
+        ) {
             val username = recoveryUsername(user)
-            docRef.set(newProfileDocument(
+            newProfileDocument(
                 user = user,
                 fullName = user.displayName.orEmpty().ifBlank { username },
                 username = username
-            )).await()
+            )
         }
     }
 

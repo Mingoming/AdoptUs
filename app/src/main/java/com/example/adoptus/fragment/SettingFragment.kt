@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.adoptus.R
 import com.example.adoptus.data.model.User
+import com.example.adoptus.data.repository.createProfileIfMissing
 import com.example.adoptus.ui.auth.LoginActivity
 import android.content.Intent
 import android.widget.ImageView
@@ -68,7 +69,7 @@ class SettingFragment : Fragment() {
         // Simpan perubahan profil
         btnSave.setOnClickListener {
             val fullName  = etFullName.text.toString().trim()
-            val username  = etUsername.text.toString().trim()
+            val username  = etUsername.text.toString()
             val bio       = etBio.text.toString().trim()
             val city      = etCity.text.toString().trim()
             val whatsapp  = etWhatsapp.text.toString().trim()
@@ -81,7 +82,7 @@ class SettingFragment : Fragment() {
                 tilUsername.error = "Username is required"
                 return@setOnClickListener
             }
-            if (!User.isValidUsername(username)) {
+            if (User.validatedUsernameInput(username) == null) {
                 tilUsername.error = "Username must be 3-30 characters without whitespace"
                 return@setOnClickListener
             }
@@ -182,18 +183,18 @@ class SettingFragment : Fragment() {
         val uid = auth.currentUser?.uid ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val doc = db.collection("users").document(uid).get().await()
                 val currentUser = auth.currentUser ?: return@launch
-                val user = if (doc.exists()) {
-                    User.fromMap(doc.id, doc.data.orEmpty())
-                } else {
+                createProfileIfMissing(
+                    db = db,
+                    uid = uid
+                ) {
                     val username = User.normalizeUsername(
                         currentUser.displayName
                             ?: currentUser.email?.substringBefore("@")
                             ?: "",
                         uid
                     )
-                    val profile = User.newDocumentMap(
+                    User.newDocumentMap(
                         uid = uid,
                         username = username,
                         fullName = currentUser.displayName
@@ -208,9 +209,9 @@ class SettingFragment : Fragment() {
                         createdAt = FieldValue.serverTimestamp(),
                         updatedAt = FieldValue.serverTimestamp()
                     )
-                    db.collection("users").document(uid).set(profile).await()
-                    User.fromMap(uid, profile)
                 }
+                val doc = db.collection("users").document(uid).get().await()
+                val user = User.fromMap(doc.id, doc.data.orEmpty())
                 etFullName.setText(user.fullName)
                 etUsername.setText(user.username)
                 etBio.setText(user.bio)

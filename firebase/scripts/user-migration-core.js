@@ -15,7 +15,7 @@ const REQUIRED_KEYS = [
 
 const ALLOWED_KEYS = new Set(REQUIRED_KEYS);
 const VALID_ROLES = new Set(["user", "admin", "moderator"]);
-const REDACTED_FIELDS = new Set(["email", "whatsapp"]);
+const PRIVILEGED_ROLES = new Set(["admin", "moderator"]);
 
 function stringValue(value, fallback = "") {
   return typeof value === "string" ? value : fallback;
@@ -63,11 +63,14 @@ function canonicalizeUser(documentId, data, serverTimestamp) {
   };
 }
 
-function redactedValue(field, value) {
-  if (REDACTED_FIELDS.has(field) && value !== undefined && value !== "") {
-    return "[REDACTED]";
+function valueType(value) {
+  if (value === null) {
+    return "null";
   }
-  return value;
+  if (Array.isArray(value)) {
+    return "array";
+  }
+  return typeof value;
 }
 
 function formatMigrationDiff(current, next) {
@@ -81,13 +84,15 @@ function formatMigrationDiff(current, next) {
     if (!currentKeys.has(field)) {
       added.push({
         field,
-        after: redactedValue(field, next[field]),
+        operation: "added",
+        afterType: valueType(next[field]),
       });
     } else if (!isDeepStrictEqual(current[field], next[field])) {
       changed.push({
         field,
-        before: redactedValue(field, current[field]),
-        after: redactedValue(field, next[field]),
+        operation: "changed",
+        beforeType: valueType(current[field]),
+        afterType: valueType(next[field]),
       });
     }
   }
@@ -96,7 +101,8 @@ function formatMigrationDiff(current, next) {
     if (!nextKeys.has(field)) {
       removed.push({
         field,
-        before: redactedValue(field, current[field]),
+        operation: "removed",
+        beforeType: valueType(current[field]),
       });
     }
   }
@@ -107,10 +113,13 @@ function formatMigrationDiff(current, next) {
 function createMigrationPlan(
   documents,
   serverTimestamp,
-  isTimestamp = (value) => value != null
+  isTimestamp = (value) => value != null,
+  { allowedPrivilegedUids = new Set() } = {}
 ) {
   const changes = [];
   const invalid = [];
+  const privilegedRoleReview = [];
+  const skippedIds = [];
   let skipped = 0;
 
   for (const document of documents) {
@@ -133,8 +142,19 @@ function createMigrationPlan(
       continue;
     }
 
+    if (
+      PRIVILEGED_ROLES.has(canonical.role)
+      && !allowedPrivilegedUids.has(document.id)
+    ) {
+      privilegedRoleReview.push({
+        id: document.id,
+        role: canonical.role,
+      });
+    }
+
     if (isDeepStrictEqual(document.data, canonical)) {
       skipped += 1;
+      skippedIds.push(document.id);
     } else {
       if (!document.updateTime) {
         invalid.push({
@@ -157,11 +177,15 @@ function createMigrationPlan(
   return {
     changes,
     invalid,
+    privilegedRoleReview,
+    skippedIds,
     report: {
       scanned: documents.length,
       changed: changes.length,
+      planned: changes.length,
       skipped,
       invalid: invalid.length,
+      privilegedRoleReview: privilegedRoleReview.length,
     },
   };
 }
@@ -235,4 +259,5 @@ module.exports = {
   normalizeUsername,
   validateCanonicalUser,
   VALID_ROLES,
+  PRIVILEGED_ROLES,
 };
