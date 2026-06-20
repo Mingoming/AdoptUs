@@ -20,6 +20,9 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `FeedAdapter` mendukung media image via Coil dan video via Media3 ExoPlayer.
 * `AddPostFragment` menyimpan data teks hewan ke Firestore.
 * `SettingFragment` memuat dan menyimpan data profil user ke Firestore.
+* Register baru menulis schema user canonical; Setting tetap membaca schema legacy selama migrasi.
+* Firestore rules transitional dan strict tersedia beserta emulator tests.
+* Script dry-run, migrasi, dan verifikasi schema user tersedia di folder `firebase/`.
 * Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
 * `ProfileFragment` punya UI profile dan tombol setting.
 * `PetDetailFragment` tersedia sebagai destination Navigation, tetapi masih placeholder.
@@ -38,11 +41,9 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 ### Catatan Teknis
 
 * `btnBack` di `AddPostFragment` masih bertipe `ImageView`; sebaiknya diganti `ImageButton` untuk aksesibilitas.
-* Field user Firestore belum sepenuhnya konsisten:
-  * Register menyimpan `full_name`, `photo_url`, dan `created_at`.
-  * Setting membaca/menulis `fullName`, `bio`, `city`, dan `whatsapp`.
-  * Perlu normalisasi schema sebelum fitur profil dipakai lebih jauh.
-* Root `build.gradle.kts` lokal di working tree saat ini memiliki perubahan yang menambahkan plugin Kotlin JVM di root project. Itu bukan pola utama proyek Android ini dan sebaiknya tidak di-commit sebelum dipastikan perlu.
+* Data user production lama mungkin masih memakai `full_name`, `photo_url`, dan `created_at`.
+* Aplikasi melakukan dual-read untuk schema lama dan canonical sampai migrasi production selesai.
+* `firestore.rules` adalah rules strict dan tidak boleh dideploy sebelum backup, dry-run, migrasi, dan verifikasi selesai.
 
 ## Tech Stack
 
@@ -102,23 +103,24 @@ app/src/main/
     `-- xml/
 ```
 
-## Firestore Schema Saat Ini
+## Firestore Schema Canonical
 
 ### Koleksi `users`
 
 | Field | Tipe | Keterangan |
 |---|---|---|
-| id | String | UID Firebase Auth |
-| username | String | Username user |
-| email | String | Email Firebase Auth |
-| full_name | String | Nama lengkap dari register |
-| photo_url | String | URL foto profil, saat ini bisa kosong |
+| uid | String | Sama dengan document ID dan Firebase Auth UID |
+| username | String | 3-30 karakter tanpa spasi |
+| fullName | String | Nama lengkap, maksimal 80 karakter |
+| photoUrl | String | URL foto profil, boleh kosong |
+| bio | String | Bio, maksimal 300 karakter |
+| city | String | Kota, maksimal 80 karakter |
+| whatsapp | String | Nomor WhatsApp, maksimal 30 karakter |
 | role | String | Default `user` |
-| created_at | Timestamp | Waktu register |
-| fullName | String | Ditulis oleh SettingFragment saat update profil |
-| bio | String | Ditulis oleh SettingFragment |
-| city | String | Ditulis oleh SettingFragment |
-| whatsapp | String | Ditulis oleh SettingFragment |
+| createdAt | Timestamp | Waktu register, immutable |
+| updatedAt | Timestamp | Waktu perubahan profil terakhir |
+
+Email tetap berada di Firebase Authentication dan tidak disimpan dalam dokumen profil. Selama masa transisi, `User.fromMap()` masih membaca `id`, `full_name`, `photo_url`, dan `created_at`.
 
 ### Koleksi `posts`
 
@@ -191,6 +193,52 @@ $env:PATH="$env:JAVA_HOME\bin;$env:PATH"
 .\gradlew.bat :app:testDebugUnitTest --no-daemon
 ```
 
+## Firebase Security dan Migrasi User
+
+Tooling Firebase berada di folder `firebase/` dan membutuhkan Node.js serta Java.
+
+```powershell
+Set-Location firebase
+npm install
+npm test
+npm run test:rules:transitional
+npm run test:rules:strict
+npm run test:migration:emulator
+```
+
+Urutan rollout production wajib:
+
+1. Simpan rules production lama sebagai rollback artifact.
+2. Deploy `firestore.transitional.rules`, bukan strict rules.
+3. Rilis aplikasi yang melakukan canonical-write dan dual-read.
+4. Buat backup/export Firestore production.
+5. Jalankan verification dan migration dry-run.
+6. Jalankan migration dengan konfirmasi eksplisit.
+7. Pastikan verification menghasilkan `invalidCount: 0`.
+8. Baru deploy `firestore.rules`.
+9. Monitor error `PERMISSION_DENIED`, register, Setting, Feed, dan Add Post.
+
+Contoh backup menggunakan Google Cloud CLI:
+
+```powershell
+gcloud firestore export gs://<BACKUP_BUCKET>/adoptus/2026-06-20 `
+  --project=adoptus-e66f1
+```
+
+Credential Admin SDK harus berada di luar repository:
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\secure\adoptus-service-account.json"
+$env:GCLOUD_PROJECT="adoptus-e66f1"
+
+npm run verify:users
+npm run migrate:users:dry
+node scripts/migrate-users.js --confirm-production
+npm run verify:users
+```
+
+Jangan menjalankan migration production sebelum backup selesai dan output dry-run sudah diperiksa. Jika strict rules menolak operasi client yang valid, deploy kembali transitional rules, tambahkan regression test, lalu perbaiki strict rules. Jangan kembali ke rules terbuka.
+
 ## Dokumentasi Arsitektur
 
 ADR tersedia di `doc/adr/`:
@@ -200,6 +248,7 @@ ADR tersedia di `doc/adr/`:
 * `0003-navigation-component-migration.md`: migrasi ke Jetpack Navigation Component.
 * `0004-feed-firestore-setting.md`: Firestore feed, post model, AddPost, dan Setting.
 * `0005-current-implementation-baseline.md`: baseline implementasi terbaru dan gap teknis.
+* `0006-firestore-security-user-schema.md`: schema user canonical, security rules, dan strategi migrasi.
 
 ## Lisensi
 

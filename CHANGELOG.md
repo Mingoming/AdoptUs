@@ -3,16 +3,31 @@
 Semua perubahan penting pada proyek Android **AdoptUs** didokumentasikan di file ini.
 Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] - 2026-06-06
+## [Unreleased] - 2026-06-20
+
+### Added
+
+* Menambahkan Firestore transitional rules dan strict rules.
+* Menambahkan Firebase Emulator tests untuk ownership, schema validation, immutable fields, dan deny-by-default.
+* Menambahkan script user migration dengan mode dry-run, migration, dan verification.
+* Menambahkan unit dan emulator integration tests untuk migration yang idempotent.
+* Menambahkan ADR `0006-firestore-security-user-schema.md`.
 
 ### Changed
 
+* Menormalisasi model user ke field canonical `uid`, `username`, `fullName`, `photoUrl`, `bio`, `city`, `whatsapp`, `role`, `createdAt`, dan `updatedAt`.
+* Register email/password dan Google sekarang menulis schema canonical.
+* Setting membaca schema canonical maupun legacy dan hanya menulis field canonical.
 * Memperbarui README agar sesuai dengan kode terbaru: splash screen, Navigation Component, Firestore feed, AddPost, Setting, dan known gaps.
 * Merapikan CHANGELOG agar memakai teks ASCII yang konsisten dan tidak menampilkan karakter encoding rusak.
 * Menambahkan ADR `0005-current-implementation-baseline.md` sebagai baseline status implementasi terbaru.
 
 ### Verified
 
+* Android user mapper tests, unit tests, dan Kotlin compilation.
+* Node migration unit tests.
+* Transitional dan strict Firestore rules melalui Firebase Emulator.
+* Migration dry-run, write, dan verification melalui Firebase Emulator project demo.
 * `:app:compileDebugKotlin --no-daemon` berhasil dengan JDK lokal lengkap.
 * `:app:compileDebugJavaWithJavac --no-daemon` berhasil dengan JDK lokal lengkap.
 * `:app:testDebugUnitTest --no-daemon` berhasil dengan JDK lokal lengkap.

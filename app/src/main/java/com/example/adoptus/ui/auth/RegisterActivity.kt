@@ -28,6 +28,9 @@ class RegisterActivity : AppCompatActivity() {
             if (fullName.isEmpty()) {
                 binding.tilFullName.error = "Full name is required."
                 return@setOnClickListener
+            } else if (fullName.length > 80) {
+                binding.tilFullName.error = "Full name must be 80 characters or fewer."
+                return@setOnClickListener
             } else {
                 binding.tilFullName.error = null
             }
@@ -37,6 +40,9 @@ class RegisterActivity : AppCompatActivity() {
                 return@setOnClickListener
             } else if (username.length < 3) {
                 binding.tilUsername.error = "Username must be at least 3 characters."
+                return@setOnClickListener
+            } else if (username.length > 30) {
+                binding.tilUsername.error = "Username must be 30 characters or fewer."
                 return@setOnClickListener
             } else if (username.contains(" ")) {
                 binding.tilUsername.error = "Username cannot contain spaces."

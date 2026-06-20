@@ -16,3 +16,12 @@
 local.properties
 .idea
 .vscode
+
+# Firebase local tooling
+firebase/node_modules/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+firebase/service-account*.json
+service-account*.json

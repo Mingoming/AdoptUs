@@ -1,0 +1,205 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validString(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function validUsername(value) {
+      return value is string
+        && value.size() >= 3
+        && value.size() <= 30
+        && !value.matches('.*\\s+.*');
+    }
+
+    function validUserKeys() {
+      return request.resource.data.keys().hasAll([
+          'uid',
+          'username',
+          'fullName',
+          'photoUrl',
+          'bio',
+          'city',
+          'whatsapp',
+          'role',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'username',
+          'fullName',
+          'photoUrl',
+          'bio',
+          'city',
+          'whatsapp',
+          'role',
+          'createdAt',
+          'updatedAt'
+        ]);
+    }
+
+    function validUserValues(uid) {
+      let data = request.resource.data;
+      return data.uid == uid
+        && validUsername(data.username)
+        && validString(data.fullName, 80)
+        && data.fullName.size() >= 1
+        && validString(data.photoUrl, 2048)
+        && validString(data.bio, 300)
+        && validString(data.city, 80)
+        && validString(data.whatsapp, 30)
+        && data.role == 'user'
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function validUserCreate(uid) {
+      return validUserKeys()
+        && validUserValues(uid)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validUserUpdate(uid) {
+      return validUserKeys()
+        && validUserValues(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'username',
+          'fullName',
+          'photoUrl',
+          'bio',
+          'city',
+          'whatsapp',
+          'updatedAt'
+        ])
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validPostKeys() {
+      return request.resource.data.keys().hasAll([
+          'postId',
+          'userId',
+          'petName',
+          'petType',
+          'breed',
+          'age',
+          'ageUnit',
+          'city',
+          'description',
+          'mediaUrl',
+          'mediaType',
+          'isVaccinated',
+          'hasHealthPassport',
+          'adoptionFee',
+          'status',
+          'likesCount',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'postId',
+          'userId',
+          'petName',
+          'petType',
+          'breed',
+          'age',
+          'ageUnit',
+          'city',
+          'description',
+          'mediaUrl',
+          'mediaType',
+          'isVaccinated',
+          'hasHealthPassport',
+          'adoptionFee',
+          'status',
+          'likesCount',
+          'createdAt'
+        ]);
+    }
+
+    function validPostValues(postId) {
+      let data = request.resource.data;
+      return data.postId == postId
+        && validString(data.userId, 128)
+        && data.userId.size() >= 1
+        && validString(data.petName, 80)
+        && data.petName.size() >= 1
+        && validString(data.petType, 40)
+        && data.petType.size() >= 1
+        && validString(data.breed, 80)
+        && validString(data.city, 80)
+        && validString(data.description, 2000)
+        && validString(data.mediaUrl, 2048)
+        && data.age is int
+        && data.age >= 0
+        && data.ageUnit in ['Months', 'Years']
+        && data.mediaType in ['image', 'video']
+        && data.isVaccinated is bool
+        && data.hasHealthPassport is bool
+        && data.adoptionFee is int
+        && data.adoptionFee >= 0
+        && data.status in ['available', 'pending', 'adopted']
+        && data.likesCount is int
+        && data.likesCount >= 0
+        && data.createdAt is timestamp;
+    }
+
+    function validPostCreate(postId) {
+      return validPostKeys()
+        && validPostValues(postId)
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'available'
+        && request.resource.data.likesCount == 0;
+    }
+
+    function validPostUpdate(postId) {
+      return validPostKeys()
+        && validPostValues(postId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'petName',
+          'petType',
+          'breed',
+          'age',
+          'ageUnit',
+          'city',
+          'description',
+          'mediaUrl',
+          'mediaType',
+          'isVaccinated',
+          'hasHealthPassport',
+          'adoptionFee',
+          'status'
+        ]);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if isOwner(uid) && validUserCreate(uid);
+      allow update: if isOwner(uid) && validUserUpdate(uid);
+      allow delete: if false;
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validPostCreate(postId);
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && validPostUpdate(postId);
+      allow delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

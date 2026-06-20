@@ -1,5 +1,6 @@
 package com.example.adoptus.data.repository
 
+import com.example.adoptus.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
@@ -25,14 +26,13 @@ class AuthRepository {
 
             val uid = result.user!!.uid
 
-            val userData = hashMapOf(
-                "id"         to uid,
-                "username"   to username,
-                "email"      to email,
-                "full_name"  to fullName,
-                "photo_url"  to "",
-                "role"       to "user",
-                "created_at" to FieldValue.serverTimestamp()
+            val userData = User.newDocumentMap(
+                uid = uid,
+                username = username,
+                fullName = fullName,
+                photoUrl = "",
+                createdAt = FieldValue.serverTimestamp(),
+                updatedAt = FieldValue.serverTimestamp()
             )
 
             db.collection("users")
@@ -70,14 +70,23 @@ class AuthRepository {
             val docRef = db.collection("users").document(user.uid)
             val doc = docRef.get().await()
             if (!doc.exists()) {
-                val userData = hashMapOf(
-                    "id"         to user.uid,
-                    "username"   to (user.displayName ?: user.email?.substringBefore("@") ?: ""),
-                    "email"      to (user.email ?: ""),
-                    "full_name"  to (user.displayName ?: ""),
-                    "photo_url"  to (user.photoUrl?.toString() ?: ""),
-                    "role"       to "user",
-                    "created_at" to FieldValue.serverTimestamp()
+                val username = User.normalizeUsername(
+                    value = user.displayName
+                        ?: user.email?.substringBefore("@")
+                        ?: "",
+                    uid = user.uid
+                )
+                val userData = User.newDocumentMap(
+                    uid = user.uid,
+                    username = username,
+                    fullName = user.displayName
+                        ?.trim()
+                        .orEmpty()
+                        .ifBlank { username }
+                        .take(80),
+                    photoUrl = user.photoUrl?.toString().orEmpty().take(2048),
+                    createdAt = FieldValue.serverTimestamp(),
+                    updatedAt = FieldValue.serverTimestamp()
                 )
                 docRef.set(userData).await()
             }
