@@ -27,17 +27,17 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
 * `ProfileFragment` menampilkan profil Firestore dan post milik user yang sedang login.
 * `PetDetailFragment` memuat satu post dari Firestore berdasarkan `postId` dan memutar video dengan Media3.
-
 * Pemuatan profil dinamis dan navigasi langsung ke profil pemilik hewan dari Feed (`FeedFragment`) dan halaman pencarian (`SearchFragment`).
 * WhatsApp clickable di halaman profil untuk secara instan menghubungi pemilik hewan melalui chat WhatsApp.
 * Fitur Swipe-to-Refresh untuk memuat ulang data dengan animasi menarik di halaman Feed dan Profile.
 * Pilihan foto profil dengan fitur pemotongan (cropping) menggunakan pustaka UCrop.
 * Safe layout pada `AddPostFragment` dengan bar atas transparan dan padding bawah agar nyaman digunakan dengan sistem navigasi tombol/gestur Android.
+* Tombol like yang tersinkronisasi dan tersimpan statusnya secara persisten ke Firestore (`posts/{postId}/likes`).
+* Alur adopsi lengkap (Apply dari Feed, halaman Inbox di Profile, Approve / Reject permohonan secara atomik menggunakan transaksi batch).
 
 ### Belum Selesai
 
-* Tombol like belum menyimpan state ke Firestore (masih lokal/no-op).
-* Alur adopsi lengkap seperti apply, approve, reject, dan koleksi `adoptions` belum tersedia.
+* Notifikasi push (FCM) untuk memberi tahu pengadopsi saat permohonan disetujui/ditolak.
 
 ### Catatan Teknis
 
@@ -156,7 +156,24 @@ Repository ini tidak menyimpan atau mendeploy file rules secara otomatis.
 | adoptionFee | Number | `0` berarti gratis |
 | status | String | `available`, `pending`, atau `adopted` |
 | likesCount | Number | Jumlah like |
+| ownerUsername | String | Username pemilik hewan (embedded) |
+| ownerPhotoUrl | String | URL foto profil pemilik (embedded) |
+| ownerWhatsapp | String | Nomor WhatsApp pemilik (embedded) |
 | createdAt | Timestamp | Waktu upload |
+
+### Koleksi `adoptions`
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| adoptionId | String | ID dokumen pengajuan adopsi |
+| postId | String | ID postingan hewan terkait |
+| petName | String | Nama hewan yang diajukan |
+| adopterId | String | UID pelamar adopsi |
+| adopterName | String | Nama lengkap pelamar adopsi |
+| ownerId | String | UID pemilik postingan hewan |
+| status | String | `pending`, `approved`, `rejected`, atau `cancelled` |
+| createdAt | Timestamp | Waktu pengajuan request adopsi |
+| updatedAt | Timestamp | Waktu pembaruan status |
 
 ## Alur Navigasi
 
@@ -173,11 +190,13 @@ App dibuka
         |-- AddPostFragment
         |-- ProfileFragment
         |   |-- SettingFragment
+        |   |-- InboxFragment
+        |   |   `-- PetDetailFragment
         |   `-- PetDetailFragment
         `-- SettingFragment
 ```
 
-Bottom navigation disembunyikan saat masuk ke `AddPostFragment` dan `PetDetailFragment`.
+Bottom navigation disembunyikan saat masuk ke `AddPostFragment`, `PetDetailFragment`, dan `InboxFragment`.
 
 ## Cara Menjalankan
 

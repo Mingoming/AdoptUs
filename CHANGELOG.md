@@ -7,6 +7,13 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+* Mengimplementasikan alur adopsi hewan lengkap: pengajuan request adopsi dari Feed (Apply button) dengan dialog konfirmasi, inbox permohonan masuk (`InboxFragment`), adaptasi list pengajuan (`InboxAdapter`), dan alur persetujuan (`Approve` / `Reject`) secara atomik.
+* Menambahkan persistensi status Like postingan ke Firestore menggunakan subkoleksi post likes (`posts/{postId}/likes`) dan user likedPosts (`users/{userId}/likedPosts`).
+* Mengoptimalkan tampilan Like secara responsif menggunakan *optimistic UI update* di `FeedViewModel` dengan pewarnaan tombol like (`primary_orange` tint) dan sinkronisasi data likes dari cache lokal.
+* Mengoptimalkan query database dengan menyematkan (embedding) informasi profil pemilik (`ownerUsername`, `ownerPhotoUrl`, `ownerWhatsapp`) langsung saat postingan dibuat untuk mengeliminasi query N+1, dengan fallback dinamis untuk postingan lama.
+* Menghentikan audio dan video secara otomatis (`pause` dan `release` ExoPlayer) ketika item postingan digeser keluar dari layar (`onViewDetachedFromWindow` dan `onViewRecycled`) guna mengatasi audio video bocor di latar belakang.
+* Membersihkan konfigurasi Gradle dengan menghapus plugin JVM tidak relevan di root project dan menghapus unused Jetpack Compose dependencies di modul aplikasi.
+* Mendefinisikan konfigurasi indeks komposit Firestore pada berkas `firestore.indexes.json` untuk stabilitas pencarian.
 * Menghubungkan klik avatar pembuat postingan di `FeedFragment` agar langsung mengarah ke profil pengguna tersebut (`ProfileFragment`) secara dinamis.
 * Membuat `ProfileFragment` mendukung pemuatan data profil dan daftar postingan pengguna manapun secara dinamis berdasarkan parameter `userId`.
 * Menyembunyikan tombol pengaturan (`btnSetting`) secara dinamis saat melihat profil milik orang lain.

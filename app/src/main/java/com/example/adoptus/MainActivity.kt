@@ -34,7 +34,8 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.addPostFragment,
-                R.id.petDetailFragment -> hideBottomNav()
+                R.id.petDetailFragment,
+                R.id.inboxFragment -> hideBottomNav()
                 else -> showBottomNav()
             }
 
