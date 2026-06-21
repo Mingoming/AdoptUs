@@ -33,13 +33,41 @@ class SettingFragment : Fragment() {
     private val mediaRepository = PostMediaRepository()
     private var selectedAvatarUri: Uri? = null
 
+    private val cropImage = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val resultUri = com.yalantis.ucrop.UCrop.getOutput(result.data!!)
+            if (resultUri != null) {
+                selectedAvatarUri = resultUri
+                view?.findViewById<ImageView>(R.id.ivAvatar)?.load(resultUri) {
+                    crossfade(true)
+                    error(R.drawable.ic_profile_placeholder)
+                }
+            }
+        } else if (result.resultCode == com.yalantis.ucrop.UCrop.RESULT_ERROR) {
+            val cropError = com.yalantis.ucrop.UCrop.getError(result.data!!)
+            Toast.makeText(context, "Crop failed: ${cropError?.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            selectedAvatarUri = uri
-            view?.findViewById<ImageView>(R.id.ivAvatar)?.load(uri) {
-                crossfade(true)
-                error(R.drawable.ic_profile_placeholder)
+            val destinationUri = Uri.fromFile(java.io.File(requireContext().cacheDir, "cropped_avatar_${System.currentTimeMillis()}.jpg"))
+            val options = com.yalantis.ucrop.UCrop.Options().apply {
+                setCircleDimmedLayer(true)
+                setShowCropGrid(false)
+                setCompressionFormat(android.graphics.Bitmap.CompressFormat.JPEG)
+                setCompressionQuality(90)
+                setToolbarColor(android.graphics.Color.parseColor("#E8693A"))
+                setStatusBarColor(android.graphics.Color.parseColor("#E8693A"))
+                setActiveControlsWidgetColor(android.graphics.Color.parseColor("#E8693A"))
+                setToolbarTitle("Crop Photo")
             }
+            val uCropIntent = com.yalantis.ucrop.UCrop.of(uri, destinationUri)
+                .withAspectRatio(1f, 1f)
+                .withMaxResultSize(500, 500)
+                .withOptions(options)
+                .getIntent(requireContext())
+            cropImage.launch(uCropIntent)
         }
     }
 
