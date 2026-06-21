@@ -7,6 +7,10 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+* Menghubungkan klik avatar pembuat postingan di `FeedFragment` agar langsung mengarah ke profil pengguna tersebut (`ProfileFragment`) secara dinamis.
+* Membuat `ProfileFragment` mendukung pemuatan data profil dan daftar postingan pengguna manapun secara dinamis berdasarkan parameter `userId`.
+* Menyembunyikan tombol pengaturan (`btnSetting`) secara dinamis saat melihat profil milik orang lain.
+* Menjadikan teks nomor WhatsApp di halaman profil dapat diklik untuk langsung membuka obrolan chat WhatsApp (`https://wa.me/`).
 * Mengintegrasikan pustaka `UCrop` untuk fitur memotong (crop) dan mengatur ukuran foto profil saat pengguna memilih foto di `SettingFragment`.
 * Menambahkan fitur Pull-to-Refresh (`SwipeRefreshLayout`) pada `FeedFragment` dan `ProfileFragment` dengan kustomisasi warna spinner oranye utama dan optimalisasi visual (menghindari double indicator loading & flicker).
 * Mengubah tampilan kolom input di `SettingFragment` menggunakan background kartu putih bersih (`@color/white`), sudut melingkar 12dp, ketebalan border 1.5dp, serta selector warna border kustom `input_stroke_color.xml` untuk keterbacaan/kontras yang tinggi.

@@ -38,13 +38,8 @@ class PostRepository {
         awaitClose { listener.remove() }
     }
 
-    // Ambil post milik user yang sedang login (untuk Profile)
-    fun getMyPosts(): Flow<Result<List<Post>>> = callbackFlow {
-        val uid = auth.currentUser?.uid ?: run {
-            trySend(Result.failure(Exception("User not logged in")))
-            close()
-            return@callbackFlow
-        }
+    // Ambil post milik user tertentu
+    fun getUserPosts(uid: String): Flow<Result<List<Post>>> = callbackFlow {
         val listener = postsCollection
             .whereEqualTo("userId", uid)
             .addSnapshotListener { snapshot, error ->
@@ -58,6 +53,15 @@ class PostRepository {
                 trySend(Result.success(posts))
             }
         awaitClose { listener.remove() }
+    }
+
+    // Ambil post milik user yang sedang login (untuk Profile)
+    fun getMyPosts(): Flow<Result<List<Post>>> {
+        val uid = auth.currentUser?.uid ?: return callbackFlow {
+            trySend(Result.failure(Exception("User not logged in")))
+            close()
+        }
+        return getUserPosts(uid)
     }
 
     // Ambil satu post by ID (untuk PetDetail)

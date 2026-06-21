@@ -6,11 +6,13 @@ import com.example.adoptus.data.model.Post
 import com.example.adoptus.data.model.User
 import com.example.adoptus.data.repository.AuthRepository
 import com.example.adoptus.data.repository.PostRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 data class ProfileUiState(
     val isLoading: Boolean = true,
@@ -24,18 +26,39 @@ class ProfileViewModel : ViewModel() {
 
     private val authRepository = AuthRepository()
     private val postRepository = PostRepository()
+    private val db = FirebaseFirestore.getInstance()
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    init {
-        observeMyPosts()
-    }
+    private var targetUserId: String? = null
 
-    fun refreshProfile() {
+    fun loadProfile(userId: String?) {
+        targetUserId = userId
+        val uid = userId ?: authRepository.getCurrentUser()?.uid
+        if (uid == null) {
+            _uiState.update {
+                it.copy(isLoading = false, profileError = "Not logged in")
+            }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, profileError = null) }
-            authRepository.getCurrentUserProfile().fold(
+            
+            val userResult = if (uid == authRepository.getCurrentUser()?.uid) {
+                authRepository.getCurrentUserProfile()
+            } else {
+                try {
+                    val doc = db.collection("users").document(uid).get().await()
+                    val user = User.fromMap(doc.id, doc.data.orEmpty())
+                    Result.success(user)
+                } catch (e: Exception) {
+                    Result.failure(e)
+                }
+            }
+
+            userResult.fold(
                 onSuccess = { user ->
                     _uiState.update {
                         it.copy(isLoading = false, user = user, profileError = null)
@@ -51,11 +74,9 @@ class ProfileViewModel : ViewModel() {
                 }
             )
         }
-    }
 
-    private fun observeMyPosts() {
         viewModelScope.launch {
-            postRepository.getMyPosts().collect { result ->
+            postRepository.getUserPosts(uid).collect { result ->
                 result.fold(
                     onSuccess = { posts ->
                         _uiState.update {
@@ -71,6 +92,10 @@ class ProfileViewModel : ViewModel() {
             }
         }
     }
+
+    fun refreshProfile() {
+        loadProfile(targetUserId)
+    }
 }
 
 internal fun User.profileDisplayName(): String =
@@ -78,3 +103,4 @@ internal fun User.profileDisplayName(): String =
 
 internal fun User.profileLocation(): String =
     city.trim()
+

@@ -1,5 +1,7 @@
 package com.example.adoptus.fragment
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -88,7 +90,12 @@ class ProfileFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        viewModel.refreshProfile()
+        val userId = arguments?.getString("userId")
+        viewModel.loadProfile(userId)
+
+        val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        val isOwnProfile = userId == null || userId == currentUid
+        view?.findViewById<ImageButton>(R.id.btnSetting)?.visibility = if (isOwnProfile) View.VISIBLE else View.GONE
     }
 
     private fun render(state: ProfileUiState) {
@@ -107,6 +114,24 @@ class ProfileFragment : Fragment() {
             whatsapp.text = "WhatsApp: ${user.whatsapp}"
             whatsapp.visibility =
                 if (user.whatsapp.isBlank()) View.GONE else View.VISIBLE
+
+            if (user.whatsapp.isNotBlank()) {
+                whatsapp.setOnClickListener {
+                    val cleanedNum = user.whatsapp.replace(Regex("[^0-9+]"), "")
+                    val formattedNum = when {
+                        cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
+                        cleanedNum.startsWith("+") -> cleanedNum.substring(1)
+                        else -> cleanedNum
+                    }
+                    val targetUrl = "https://wa.me/$formattedNum"
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
+                    startActivity(intent)
+                }
+                whatsapp.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.primary_orange))
+            } else {
+                whatsapp.setOnClickListener(null)
+                whatsapp.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.light_gray))
+            }
 
             if (user.photoUrl.isNotBlank()) {
                 avatar.load(user.photoUrl) {

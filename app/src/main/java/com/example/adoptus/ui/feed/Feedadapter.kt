@@ -20,7 +20,8 @@ import androidx.media3.ui.PlayerView
 
 class FeedAdapter(
     private val onDetailClick: (Post) -> Unit,
-    private val onApplyClick: (Post) -> Unit
+    private val onApplyClick: (Post) -> Unit,
+    private val onOwnerClick: (Post) -> Unit
 ) : ListAdapter<Post, FeedAdapter.FeedViewHolder>(DiffCallback) {
 
     inner class FeedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -139,6 +140,7 @@ class FeedAdapter(
 
             detailButton.setOnClickListener { onDetailClick(post) }
             applyButton.setOnClickListener { onApplyClick(post) }
+            ownerAvatar.setOnClickListener { onOwnerClick(post) }
             likeButton.setOnClickListener { }
         }
     }

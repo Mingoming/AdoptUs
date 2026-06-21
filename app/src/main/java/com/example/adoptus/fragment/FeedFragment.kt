@@ -68,7 +68,8 @@ class FeedFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = FeedAdapter(
             onDetailClick = { post -> navigateToDetail(post) },
-            onApplyClick  = { post -> navigateToDetail(post) }
+            onApplyClick  = { post -> navigateToDetail(post) },
+            onOwnerClick  = { post -> navigateToOwnerProfile(post.userId) }
         )
 
         val layoutManager = LinearLayoutManager(requireContext())
@@ -127,6 +128,13 @@ class FeedFragment : Fragment() {
             putString("postId", post.postId)
         }
         findNavController().navigate(R.id.action_feed_to_detail, bundle)
+    }
+
+    private fun navigateToOwnerProfile(userId: String) {
+        val bundle = android.os.Bundle().apply {
+            putString("userId", userId)
+        }
+        findNavController().navigate(R.id.action_feed_to_profile, bundle)
     }
 
 }
