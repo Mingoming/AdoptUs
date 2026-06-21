@@ -17,8 +17,8 @@
         <!-- Background -->
         <item name="windowSplashScreenBackground">@color/app_background</item>
 
-        <!-- Logo -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen</item>
+        <!-- Logo (Dibuat transparan agar tidak double intro dengan custom animation) -->
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
 
         <!-- Theme setelah splash -->
         <item name="postSplashScreenTheme">@style/Theme.AdoptUs</item>

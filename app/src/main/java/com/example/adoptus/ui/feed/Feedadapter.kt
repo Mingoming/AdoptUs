@@ -59,20 +59,50 @@ class FeedAdapter(
                 }
             }
 
-            ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+            // Memuat info profil pembuat postingan secara dinamis dari Firestore
+            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            db.collection("users").document(post.userId).get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists()) {
+                        val whatsappNum = doc.getString("whatsapp")?.trim().orEmpty()
+                        val photoUrl = doc.getString("photoUrl")?.trim().orEmpty()
+
+                        if (photoUrl.isNotBlank()) {
+                            ownerAvatar.load(photoUrl) {
+                                crossfade(true)
+                                placeholder(R.drawable.ic_profile_placeholder)
+                                error(R.drawable.ic_profile_placeholder)
+                            }
+                        } else {
+                            ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                        }
+
+                        whatsappButton.setOnClickListener {
+                            val targetUrl = if (whatsappNum.isNotBlank()) {
+                                val cleanedNum = whatsappNum.replace(Regex("[^0-9+]"), "")
+                                val formattedNum = when {
+                                    cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
+                                    cleanedNum.startsWith("+") -> cleanedNum.substring(1)
+                                    else -> cleanedNum
+                                }
+                                "https://wa.me/$formattedNum?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                            } else {
+                                "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                            }
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
+                            itemView.context.startActivity(intent)
+                        }
+                    } else {
+                        ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                    }
+                }
+                .addOnFailureListener {
+                    ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                }
 
             detailButton.setOnClickListener { onDetailClick(post) }
             applyButton.setOnClickListener { onApplyClick(post) }
             likeButton.setOnClickListener { }
-            whatsappButton.setOnClickListener {
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(
-                        "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
-                    )
-                )
-                itemView.context.startActivity(intent)
-            }
         }
     }
 

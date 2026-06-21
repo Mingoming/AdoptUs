@@ -9,6 +9,16 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 * Add Post dapat memilih dan mengunggah video MP4 maksimal 20 MB ke Supabase Storage.
 * Pet Detail dapat memutar video dengan kontrol Media3 ExoPlayer.
+* Menambahkan `SplashActivity` dan `activity_splash.xml` yang mengimplementasikan animasi pembuka aplikasi (Overshoot bounce logo/text pada entry, dan swipe-up + fade-out pada exit) sesuai dengan prototipe HTML.
+* Memindahkan logika routing/gate autentikasi (pemeriksaan `isLoggedIn()`) dari `MainActivity` ke `SplashActivity` agar berjalan mulus setelah animasi keluar selesai.
+* Mengubah ikon splash screen bawaan (native AndroidX) menjadi transparan untuk menghindari efek logo ganda (*double intro*) saat transisi dari cold start ke animasi kustom.
+* Mendesain ulang halaman login dan registrasi agar menggunakan latar belakang putih bersih (`@color/white`), mewarnai hitam teks tagline 'Adopt Love. Change a Life.', memperjelas opasitas/warna dari hint teks input email & password, serta mengubah warna teks tombol login/register dan batas stroke tombol Google menjadi hitam.
+* Menambahkan dialog dan fungsi 'Forgot Password' di `LoginActivity` untuk mengirim email reset kata sandi menggunakan Firebase Auth.
+* Mengatur agar status bar di `LoginActivity` dan `RegisterActivity` menggunakan latar belakang putih dengan ikon yang kontras (gelap) agar selaras dengan halaman lainnya.
+* Melakukan refaktor penuh pada `SearchFragment` untuk memuat postingan aktif (`available`) dan mencari postingan (berdasarkan nama, jenis, atau ras hewan) serta pengguna (berdasarkan username atau nama lengkap) secara dinamis langsung dari Firestore.
+* Membuat `SearchPostAdapter` dan `SearchUserAdapter` yang terikat dinamis dengan model data riil (`Post` dan `User`) menggunakan Coil untuk memuat gambar, menggantikan mock `SimpleGridAdapter` dan item dummy statis.
+* Mengatur agar klik pada item hasil pencarian langsung mengarahkan pengguna ke `PetDetailFragment` dengan data postingan yang valid.
+* Memperbaiki kesalahan kompilasi di `AddPostFragment` dengan menambahkan inisialisasi properti `db` (FirebaseFirestore instance) dan mengimpor pustaka `await`.
 
 ### Changed
 

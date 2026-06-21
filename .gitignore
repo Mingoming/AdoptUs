@@ -16,3 +16,8 @@
 local.properties
 .idea
 .vscode
+
+build.gradle.kts
+.codex
+.codex-plugin
+.agent

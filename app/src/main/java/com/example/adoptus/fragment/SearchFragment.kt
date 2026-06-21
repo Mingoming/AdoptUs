@@ -7,16 +7,38 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
-import android.widget.*
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.adoptus.MainActivity
 import com.example.adoptus.R
+import com.example.adoptus.data.model.Post
+import com.example.adoptus.data.model.User
+import com.example.adoptus.ui.search.SearchPostAdapter
+import com.example.adoptus.ui.search.SearchUserAdapter
 import com.google.android.material.tabs.TabLayout
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SearchFragment : Fragment() {
+
+    private val db = FirebaseFirestore.getInstance()
+
+    private lateinit var exploreAdapter: SearchPostAdapter
+    private lateinit var resultsPostsAdapter: SearchPostAdapter
+    private lateinit var resultsAccountsAdapter: SearchUserAdapter
+
+    private lateinit var rvExploreGrid: RecyclerView
+    private lateinit var rvResultsAccounts: RecyclerView
+    private lateinit var rvResultsPosts: RecyclerView
+    private lateinit var tabLayoutFilter: TabLayout
+    private lateinit var scrollResults: View
+    private lateinit var layoutAccountsSection: View
+    private lateinit var layoutPostsSection: View
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -26,39 +48,35 @@ class SearchFragment : Fragment() {
 
         val btnBackSearch = view.findViewById<ImageView>(R.id.btnBackSearch)
         val etSearch = view.findViewById<EditText>(R.id.etSearch)
-        val tabLayoutFilter = view.findViewById<TabLayout>(R.id.tabLayoutFilter)
-        val rvExploreGrid = view.findViewById<RecyclerView>(R.id.rvExploreGrid)
-        val scrollResults = view.findViewById<View>(R.id.scrollResults)
+        tabLayoutFilter = view.findViewById(R.id.tabLayoutFilter)
+        rvExploreGrid = view.findViewById(R.id.rvExploreGrid)
+        scrollResults = view.findViewById(R.id.scrollResults)
 
-        val layoutAccountsSection = view.findViewById<View>(R.id.layoutAccountsSection)
-        val layoutPostsSection = view.findViewById<View>(R.id.layoutPostsSection)
-        val rvResultsAccounts = view.findViewById<RecyclerView>(R.id.rvResultsAccounts)
-        val rvResultsPosts = view.findViewById<RecyclerView>(R.id.rvResultsPosts)
+        layoutAccountsSection = view.findViewById(R.id.layoutAccountsSection)
+        layoutPostsSection = view.findViewById(R.id.layoutPostsSection)
+        rvResultsAccounts = view.findViewById(R.id.rvResultsAccounts)
+        rvResultsPosts = view.findViewById(R.id.rvResultsPosts)
 
-        // --- DATA MOCK / DUMMY ---
-        val dummyExplorePosts = listOf(
-            SearchPostItem(R.drawable.placeholder), SearchPostItem(R.drawable.placeholder),
-            SearchPostItem(R.drawable.placeholder), SearchPostItem(R.drawable.placeholder),
-            SearchPostItem(R.drawable.placeholder), SearchPostItem(R.drawable.placeholder),
-            SearchPostItem(R.drawable.placeholder), SearchPostItem(R.drawable.placeholder),
-            SearchPostItem(R.drawable.placeholder)
-        )
+        // Setup adapters
+        exploreAdapter = SearchPostAdapter { post -> navigateToDetail(post.postId) }
+        resultsPostsAdapter = SearchPostAdapter { post -> navigateToDetail(post.postId) }
+        resultsAccountsAdapter = SearchUserAdapter { user ->
+            // Menampilkan info profile user lain (bisa disesuaikan atau show toast)
+            Toast.makeText(context, "Username: @${user.username}", Toast.LENGTH_SHORT).show()
+        }
 
-        val dummyAccounts = listOf(
-            SearchAccountItem("stray_rescue_mataram", "Followed by kkn_darek + 5 more"),
-            SearchAccountItem("cat_lover_lombok", "Popular shelter around you"),
-            SearchAccountItem("dog_adoption_id", "Verified Organization")
-        )
-
-        // SETUP ADAPTER AWAL
+        // Setup RecyclerViews
         rvExploreGrid.layoutManager = GridLayoutManager(context, 3)
-        rvExploreGrid.adapter = SimpleGridAdapter(dummyExplorePosts)
+        rvExploreGrid.adapter = exploreAdapter
 
         rvResultsAccounts.layoutManager = LinearLayoutManager(context)
-        rvResultsAccounts.adapter = SearchAccountAdapter(dummyAccounts)
+        rvResultsAccounts.adapter = resultsAccountsAdapter
 
         rvResultsPosts.layoutManager = GridLayoutManager(context, 3)
-        rvResultsPosts.adapter = SimpleGridAdapter(dummyExplorePosts)
+        rvResultsPosts.adapter = resultsPostsAdapter
+
+        // Load explore posts awal (available posts)
+        loadExplorePosts()
 
         // DETEKSI KLIK ENTER DI KEYBOARD
         etSearch.setOnEditorActionListener { _, actionId, _ ->
@@ -73,6 +91,9 @@ class SearchFragment : Fragment() {
                     // TAMPILKAN TOMBOL BACK & SEMBUNYIKAN NAVBAR UTAMA
                     btnBackSearch.visibility = View.VISIBLE
                     (activity as? MainActivity)?.hideBottomNav()
+
+                    // Jalankan query pencarian dinamis
+                    performSearch(query)
 
                     // Pindah ke mode hasil pencarian
                     rvExploreGrid.visibility = View.GONE
@@ -90,7 +111,7 @@ class SearchFragment : Fragment() {
             // Bersihkan teks di search bar
             etSearch.text?.clear()
 
-            // 💥 SEMBUNYIKAN TOMBOL BACK & MUNCULKAN NAVBAR UTAMA KEMBALI
+            // SEMBUNYIKAN TOMBOL BACK & MUNCULKAN NAVBAR UTAMA KEMBALI
             btnBackSearch.visibility = View.GONE
             (activity as? MainActivity)?.showBottomNav()
 
@@ -124,38 +145,60 @@ class SearchFragment : Fragment() {
 
         return view
     }
-}
 
-// DATA CLASS & ADAPTERS KUSTOM
-data class SearchPostItem(val imageRes: Int)
-data class SearchAccountItem(val username: String, val detail: String)
+    private fun loadExplorePosts() {
+        db.collection("posts")
+            .whereEqualTo("status", "available")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val posts = snapshot.documents.mapNotNull { doc ->
+                    doc.data?.let { Post.fromMap(doc.id, it) }
+                }
+                exploreAdapter.submitList(posts)
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Error loading explore: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
 
-class SimpleGridAdapter(private val list: List<SearchPostItem>) : RecyclerView.Adapter<SimpleGridAdapter.ViewHolder>() {
-    class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
-        val ivPhoto: ImageView = v.findViewById(R.id.ivPetPhoto)
-    }
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.profile_item_pet, parent, false)
-        return ViewHolder(view)
-    }
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.ivPhoto.setImageResource(list[position].imageRes)
-    }
-    override fun getItemCount(): Int = list.size
-}
+    private fun performSearch(query: String) {
+        val lowerQuery = query.lowercase()
 
-class SearchAccountAdapter(private val list: List<SearchAccountItem>) : RecyclerView.Adapter<SearchAccountAdapter.ViewHolder>() {
-    class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
-        val tvUsername: TextView = v.findViewById(R.id.tvUsername)
-        //val tvSubDetail: TextView = v.findViewById(R.id.tvSubDetail)
+        // 1. Cari Post berdasarkan petName (lowercase / containing search di client side agar fleksibel)
+        db.collection("posts")
+            .whereEqualTo("status", "available")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val allPosts = snapshot.documents.mapNotNull { doc ->
+                    doc.data?.let { Post.fromMap(doc.id, it) }
+                }
+                val filteredPosts = allPosts.filter {
+                    it.petName.lowercase().contains(lowerQuery) ||
+                            it.breed.lowercase().contains(lowerQuery) ||
+                            it.petType.lowercase().contains(lowerQuery)
+                }
+                resultsPostsAdapter.submitList(filteredPosts)
+            }
+
+        // 2. Cari Accounts berdasarkan username / fullName
+        db.collection("users")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val allUsers = snapshot.documents.mapNotNull { doc ->
+                    doc.data?.let { User.fromMap(doc.id, it) }
+                }
+                val filteredUsers = allUsers.filter {
+                    it.username.lowercase().contains(lowerQuery) ||
+                            it.fullName.lowercase().contains(lowerQuery)
+                }
+                resultsAccountsAdapter.submitList(filteredUsers)
+            }
     }
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.search_result, parent, false)
-        return ViewHolder(view)
+
+    private fun navigateToDetail(postId: String) {
+        val bundle = Bundle().apply {
+            putString("postId", postId)
+        }
+        findNavController().navigate(R.id.action_search_to_detail, bundle)
     }
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.tvUsername.text = list[position].username
-        //holder.tvSubDetail.text = list[position].detail
-    }
-    override fun getItemCount(): Int = list.size
 }

@@ -34,6 +34,10 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Set status bar putih dengan ikon kontras
+        window.statusBarColor = android.graphics.Color.WHITE
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+
         // Kalau sudah login, skip halaman ini langsung ke Feed
         val tempViewModel: AuthViewModel by viewModels()
         if (tempViewModel.isLoggedIn()) {
@@ -53,6 +57,10 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             viewModel.login(email, password)
+        }
+
+        binding.tvForgotPassword.setOnClickListener {
+            showForgotPasswordDialog()
         }
 
         binding.btnGoogle.setOnClickListener {
@@ -111,4 +119,40 @@ class LoginActivity : AppCompatActivity() {
             else -> "Invalid email or password."
         }
     }
+
+    private fun showForgotPasswordDialog() {
+        val input = android.widget.EditText(this).apply {
+            hint = "Enter your email"
+            inputType = android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+
+        val container = android.widget.FrameLayout(this).apply {
+            addView(input)
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Reset Password")
+            .setMessage("We will send a password reset link to your email address.")
+            .setView(container)
+            .setPositiveButton("Send") { _, _ ->
+                val email = input.text.toString().trim()
+                if (email.isEmpty()) {
+                    showToast("Email cannot be empty.")
+                } else {
+                    com.google.firebase.auth.FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                showToast("Reset link sent successfully.")
+                            } else {
+                                showToast("Failed to send reset link: ${task.exception?.message}")
+                            }
+                        }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
 }
+

@@ -27,11 +27,14 @@ import com.example.adoptus.data.repository.PostRepository
 import com.example.adoptus.data.repository.UploadedPostMedia
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 
 class AddPostFragment : Fragment() {
 
     private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
     private val postRepository = PostRepository()
     private val mediaRepository = PostMediaRepository()
 
@@ -219,6 +222,10 @@ class AddPostFragment : Fragment() {
                 val uid = auth.currentUser?.uid
                     ?: throw IllegalStateException("Not logged in")
 
+                // Mengambil data kota dinamis dari profil user di Firestore
+                val userDoc = db.collection("users").document(uid).get().await()
+                val userCity = userDoc.getString("city")?.trim().orEmpty().ifBlank { "Indonesia" }
+
                 uploadedMedia = selectedMediaUri?.let { mediaUri ->
                     mediaRepository.uploadMedia(
                         contentResolver = requireContext().contentResolver,
@@ -228,6 +235,7 @@ class AddPostFragment : Fragment() {
                 }
 
                 val postWithMedia = post.copy(
+                    city = userCity,
                     mediaUrl = uploadedMedia?.publicUrl.orEmpty(),
                     mediaType = uploadedMedia?.mediaType ?: "image"
                 )
