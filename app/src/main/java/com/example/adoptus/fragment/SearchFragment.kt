@@ -75,7 +75,10 @@ class SearchFragment : Fragment() {
         resultsAccountsAdapter = SearchUserAdapter { user ->
             // Simpan pencarian ke history
             saveQueryToHistory(user.username)
-            Toast.makeText(context, "Username: @${user.username}", Toast.LENGTH_SHORT).show()
+            val bundle = Bundle().apply {
+                putString("userId", user.id)
+            }
+            findNavController().navigate(R.id.action_search_to_profile, bundle)
         }
 
         // Setup RecyclerViews
