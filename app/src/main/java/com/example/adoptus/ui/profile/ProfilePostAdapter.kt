@@ -32,19 +32,20 @@ class ProfilePostAdapter(
             breed.text = post.breed.ifBlank { post.petType }
             itemView.setOnClickListener { onPostClick(post) }
 
-            if (post.mediaType == "video") {
-                photo.setImageResource(R.drawable.placeholder)
-                videoIndicator.visibility = View.VISIBLE
-            } else if (post.mediaUrl.isNotBlank()) {
-                videoIndicator.visibility = View.GONE
+            if (post.mediaUrl.isNotBlank()) {
                 photo.load(post.mediaUrl) {
                     crossfade(true)
                     placeholder(R.drawable.placeholder)
                     error(R.drawable.placeholder)
                 }
             } else {
-                videoIndicator.visibility = View.GONE
                 photo.setImageResource(R.drawable.placeholder)
+            }
+
+            if (post.mediaType == "video") {
+                videoIndicator.visibility = View.VISIBLE
+            } else {
+                videoIndicator.visibility = View.GONE
             }
         }
     }

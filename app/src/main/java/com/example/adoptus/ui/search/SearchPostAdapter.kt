@@ -29,20 +29,20 @@ class SearchPostAdapter(
             tvPetName.text = post.petName
             tvPetBreed.text = post.breed.ifBlank { post.petType }
 
-            if (post.mediaType == "video") {
+            if (post.mediaUrl.isNotBlank()) {
+                ivPhoto.load(post.mediaUrl) {
+                    crossfade(true)
+                    placeholder(R.drawable.placeholder)
+                    error(R.drawable.placeholder)
+                }
+            } else {
                 ivPhoto.setImageResource(R.drawable.placeholder)
+            }
+
+            if (post.mediaType == "video") {
                 imgVideoIndicator.visibility = View.VISIBLE
             } else {
                 imgVideoIndicator.visibility = View.GONE
-                if (post.mediaUrl.isNotBlank()) {
-                    ivPhoto.load(post.mediaUrl) {
-                        crossfade(true)
-                        placeholder(R.drawable.placeholder)
-                        error(R.drawable.placeholder)
-                    }
-                } else {
-                    ivPhoto.setImageResource(R.drawable.placeholder)
-                }
             }
 
             itemView.setOnClickListener { onPostClick(post) }

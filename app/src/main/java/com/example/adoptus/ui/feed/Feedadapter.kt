@@ -13,6 +13,10 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 import com.example.adoptus.R
 import com.example.adoptus.data.model.Post
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 
 class FeedAdapter(
     private val onDetailClick: (Post) -> Unit,
@@ -21,8 +25,7 @@ class FeedAdapter(
 
     inner class FeedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val media: ImageView = itemView.findViewById(R.id.ivMedia)
-        private val videoIndicator: ImageView =
-            itemView.findViewById(R.id.imgVideoIndicator)
+        private val videoIndicator: ImageView = itemView.findViewById(R.id.imgVideoIndicator)
         private val petName: TextView = itemView.findViewById(R.id.tvPetName)
         private val breedAge: TextView = itemView.findViewById(R.id.tvBreedAge)
         private val city: TextView = itemView.findViewById(R.id.tvCity)
@@ -34,6 +37,8 @@ class FeedAdapter(
         private val whatsappButton: TextView = itemView.findViewById(R.id.btnWhatsapp)
         private val likeButton: ImageView = itemView.findViewById(R.id.btnLike)
         private val detailButton: ImageView = itemView.findViewById(R.id.btnDetail)
+        private val pvVideo: PlayerView = itemView.findViewById(R.id.pvVideo)
+        private var exoPlayer: ExoPlayer? = null
 
         fun bind(post: Post) {
             petName.text = post.petName
@@ -43,11 +48,43 @@ class FeedAdapter(
             status.text = post.status.replaceFirstChar { it.uppercase() }
             fee.text = if (post.isFree) "FREE" else "Rp ${post.adoptionFee}"
 
+            // Bersihkan player lama
+            exoPlayer?.release()
+            exoPlayer = null
+            pvVideo.player = null
+            pvVideo.visibility = View.GONE
+            media.visibility = View.VISIBLE
+
             if (post.mediaType == "video") {
-                media.setImageResource(R.drawable.placeholder)
-                videoIndicator.visibility = View.VISIBLE
+                videoIndicator.visibility = View.GONE
+                pvVideo.visibility = View.VISIBLE
+
+                val player = ExoPlayer.Builder(itemView.context).build().also {
+                    it.repeatMode = Player.REPEAT_MODE_ALL
+                    val mediaItem = MediaItem.fromUri(post.mediaUrl)
+                    it.setMediaItem(mediaItem)
+                    it.prepare()
+                    it.playWhenReady = true // Autoplay
+                }
+                exoPlayer = player
+                pvVideo.player = player
+
+                // Tap video untuk Play / Pause
+                val togglePlay = View.OnClickListener {
+                    val p = exoPlayer ?: return@OnClickListener
+                    if (p.isPlaying) {
+                        p.pause()
+                        videoIndicator.visibility = View.VISIBLE
+                    } else {
+                        p.play()
+                        videoIndicator.visibility = View.GONE
+                    }
+                }
+                pvVideo.setOnClickListener(togglePlay)
+                media.setOnClickListener(togglePlay)
             } else {
                 videoIndicator.visibility = View.GONE
+                media.setOnClickListener(null)
                 if (post.mediaUrl.isNotBlank()) {
                     media.load(post.mediaUrl) {
                         crossfade(true)
