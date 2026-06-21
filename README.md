@@ -22,9 +22,9 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `SettingFragment` memuat dan menyimpan data profil user ke Firestore.
 * Register baru menyimpan profil user dengan field camelCase yang konsisten.
 * Setting tetap dapat membaca field lama seperti `full_name`, `photo_url`, dan `created_at`.
-* Firestore rules sederhana tersedia untuk membatasi profil dan post berdasarkan pemiliknya.
+* Firestore rules sederhana diterapkan manual melalui Firebase Console untuk membatasi profil dan post berdasarkan pemiliknya.
 * Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
-* `ProfileFragment` punya UI profile dan tombol setting.
+* `ProfileFragment` menampilkan profil Firestore dan post milik user yang sedang login.
 * `PetDetailFragment` tersedia sebagai destination Navigation, tetapi masih placeholder.
 
 ### Belum Selesai
@@ -33,7 +33,6 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `mediaUrl` masih kosong saat Add Post.
 * Kota di Add Post masih hardcode `"Indonesia"`.
 * `SearchFragment` masih template/placeholder.
-* `ProfileFragment` masih memakai dummy data lokal untuk grid.
 * `PetDetailFragment` masih placeholder.
 * Tombol like belum menyimpan state ke Firestore.
 * Alur adopsi lengkap seperti apply, approve, reject, dan koleksi `adoptions` belum tersedia.
@@ -122,14 +121,14 @@ Email tetap disimpan oleh Firebase Authentication dan tidak ditulis ke dokumen u
 
 ### Firestore Rules
 
-File `firestore.rules` memakai aturan sederhana:
+Rules diterapkan manual melalui Firebase Console dengan aturan sederhana:
 
 * User hanya dapat membaca dan mengubah dokumen profil miliknya.
 * Role dan ID profil tidak dapat diubah lewat update biasa.
 * Post dapat dibaca user yang sudah login.
 * Post hanya dapat dibuat, diubah, atau dihapus oleh pemiliknya.
 
-Rules tidak dideploy otomatis dari repository ini.
+Repository ini tidak menyimpan atau mendeploy file rules secara otomatis.
 
 ### Koleksi `posts`
 

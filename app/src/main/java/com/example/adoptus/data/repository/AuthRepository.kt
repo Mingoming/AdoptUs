@@ -100,5 +100,19 @@ class AuthRepository {
 
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
+    suspend fun getCurrentUserProfile(): Result<User> {
+        return try {
+            val uid = auth.currentUser?.uid
+                ?: return Result.failure(Exception("User not logged in"))
+            val document = db.collection("users").document(uid).get().await()
+            val data = document.data
+                ?: return Result.failure(Exception("User profile not found"))
+
+            Result.success(User.fromMap(document.id, data))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun logout() = auth.signOut()
 }

@@ -47,7 +47,6 @@ class PostRepository {
         }
         val listener = postsCollection
             .whereEqualTo("userId", uid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     trySend(Result.failure(error))
@@ -55,7 +54,7 @@ class PostRepository {
                 }
                 val posts = snapshot?.documents?.mapNotNull { doc ->
                     doc.data?.let { Post.fromMap(doc.id, it) }
-                } ?: emptyList()
+                }?.sortedByDescending { it.createdAt } ?: emptyList()
                 trySend(Result.success(posts))
             }
         awaitClose { listener.remove() }

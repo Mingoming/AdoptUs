@@ -4,77 +4,115 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
+import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.example.adoptus.R
+import com.example.adoptus.ui.profile.ProfilePostAdapter
+import com.example.adoptus.ui.profile.ProfileUiState
+import com.example.adoptus.ui.profile.ProfileViewModel
+import com.example.adoptus.ui.profile.profileDisplayName
+import com.example.adoptus.ui.profile.profileLocation
+import com.google.android.material.imageview.ShapeableImageView
+import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
 
+    private val viewModel: ProfileViewModel by viewModels()
+    private val postAdapter = ProfilePostAdapter()
+
+    private lateinit var topAccountName: TextView
+    private lateinit var profileName: TextView
+    private lateinit var bio: TextView
+    private lateinit var location: TextView
+    private lateinit var whatsapp: TextView
+    private lateinit var postCount: TextView
+    private lateinit var message: TextView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var avatar: ShapeableImageView
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_profile, container, false)
+    ): View = inflater.inflate(R.layout.fragment_profile, container, false)
 
-        val tvTopAccountName = view.findViewById<TextView>(R.id.tvTopAccountName)
-        tvTopAccountName.text = "sarah_mitchell"
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        // Tombol setting → navigasi ke SettingFragment
-        val btnSetting = view.findViewById<ImageView>(R.id.btnSetting)
-        btnSetting.setOnClickListener {
+        topAccountName = view.findViewById(R.id.tvTopAccountName)
+        profileName = view.findViewById(R.id.tvProfileName)
+        bio = view.findViewById(R.id.tvBio)
+        location = view.findViewById(R.id.tvLocation)
+        whatsapp = view.findViewById(R.id.tvWhatsapp)
+        postCount = view.findViewById(R.id.tvPostCount)
+        message = view.findViewById(R.id.tvProfileMessage)
+        progressBar = view.findViewById(R.id.profileProgressBar)
+        avatar = view.findViewById(R.id.ivAvatar)
+
+        view.findViewById<ImageButton>(R.id.btnSetting).setOnClickListener {
             findNavController().navigate(R.id.action_profile_to_setting)
         }
 
-        val rvPetGrid = view.findViewById<RecyclerView>(R.id.rvPetGrid)
-        rvPetGrid.layoutManager = GridLayoutManager(context, 3)
+        view.findViewById<RecyclerView>(R.id.rvPetGrid).apply {
+            layoutManager = GridLayoutManager(requireContext(), 3)
+            adapter = postAdapter
+        }
 
-        val dummyPets = listOf(
-            DummyItem("David", "Blasteran", R.drawable.placeholder),
-            DummyItem("Abu Gosong", "KAMPUNG", R.drawable.placeholder),
-            DummyItem("Teddy", "Poodle", R.drawable.placeholder),
-            DummyItem("Luna", "Labrador", R.drawable.placeholder),
-            DummyItem("Simba", "Shorthair", R.drawable.placeholder),
-            DummyItem("Barnie", "Border Collie", R.drawable.placeholder),
-            DummyItem("Amel", "Siamese", R.drawable.placeholder),
-            DummyItem("Peanut", "Chihuahua", R.drawable.placeholder),
-            DummyItem("David", "Blasteran", R.drawable.placeholder),
-            DummyItem("Amel", "Siamese", R.drawable.placeholder),
-            DummyItem("Peanut", "Chihuahua", R.drawable.placeholder),
-            DummyItem("David", "Blasteran", R.drawable.placeholder)
-        )
-
-        val adapter = ProfileGridAdapter(dummyPets)
-        rvPetGrid.adapter = adapter
-
-        return view
-    }
-}
-
-data class DummyItem(val title: String, val subtitle: String, val imageRes: Int)
-
-class ProfileGridAdapter(private val list: List<DummyItem>) : RecyclerView.Adapter<ProfileGridAdapter.ViewHolder>() {
-
-    class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
-        val ivPhoto: android.widget.ImageView = v.findViewById(R.id.ivPetPhoto)
-        val tvTitle: TextView = v.findViewById(R.id.tvPetName)
-        val tvSubtitle: TextView = v.findViewById(R.id.tvPetBreed)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.uiState.collect(::render)
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.profile_item_pet, parent, false)
-        return ViewHolder(view)
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshProfile()
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = list[position]
-        holder.tvTitle.text = item.title
-        holder.tvSubtitle.text = item.subtitle
-        holder.ivPhoto.setImageResource(item.imageRes)
-    }
+    private fun render(state: ProfileUiState) {
+        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
 
-    override fun getItemCount(): Int = list.size
+        state.user?.let { user ->
+            topAccountName.text = user.username
+            profileName.text = user.profileDisplayName()
+            bio.text = user.bio.ifBlank { "No bio yet" }
+
+            val city = user.profileLocation()
+            location.text = city
+            location.visibility = if (city.isBlank()) View.GONE else View.VISIBLE
+
+            whatsapp.text = "WhatsApp: ${user.whatsapp}"
+            whatsapp.visibility =
+                if (user.whatsapp.isBlank()) View.GONE else View.VISIBLE
+
+            if (user.photoUrl.isNotBlank()) {
+                avatar.load(user.photoUrl) {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_profile_placeholder)
+                    error(R.drawable.ic_profile_placeholder)
+                }
+            } else {
+                avatar.setImageResource(R.drawable.ic_profile_placeholder)
+            }
+        }
+
+        postCount.text = state.posts.size.toString()
+        postAdapter.submitList(state.posts)
+
+        val messageText = when {
+            state.profileError != null -> state.profileError
+            state.postsError != null -> state.postsError
+            !state.isLoading && state.posts.isEmpty() -> "No posts yet"
+            else -> null
+        }
+        message.text = messageText.orEmpty()
+        message.visibility = if (messageText == null) View.GONE else View.VISIBLE
+    }
 }
