@@ -26,7 +26,12 @@ import kotlinx.coroutines.launch
 class ProfileFragment : Fragment() {
 
     private val viewModel: ProfileViewModel by viewModels()
-    private val postAdapter = ProfilePostAdapter()
+    private val postAdapter = ProfilePostAdapter { post ->
+        val bundle = Bundle().apply {
+            putString("postId", post.postId)
+        }
+        findNavController().navigate(R.id.action_profile_to_detail, bundle)
+    }
 
     private lateinit var topAccountName: TextView
     private lateinit var profileName: TextView

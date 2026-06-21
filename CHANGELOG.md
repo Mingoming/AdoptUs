@@ -10,6 +10,7 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 * Menambahkan mapper `User.fromMap()` dan `User.toMap()` dengan fallback untuk data Firestore lama.
 * Mendokumentasikan Firestore rules sederhana yang diterapkan manual untuk ownership profil dan post.
 * Menampilkan profil Firestore dan post milik user pada `ProfileFragment`.
+* Menambahkan halaman Pet Detail berbasis data Firestore dan `PetDetailViewModel`.
 
 ### Changed
 
@@ -21,6 +22,7 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 * Validasi nama lengkap dan username disamakan antara register dan Setting.
 * `ProfileFragment` sekarang memakai MVVM sederhana dan memuat ulang profil setelah kembali dari Setting.
 * Dokumentasi rules disesuaikan karena rules diterapkan manual melalui Firebase Console.
+* Post pada grid Profile sekarang membuka detail yang sama dengan post dari Feed.
 
 ### Fixed
 

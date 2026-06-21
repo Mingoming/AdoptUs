@@ -12,10 +12,15 @@ import coil.load
 import com.example.adoptus.R
 import com.example.adoptus.data.model.Post
 
-class ProfilePostAdapter :
+class ProfilePostAdapter(
+    private val onPostClick: (Post) -> Unit
+) :
     ListAdapter<Post, ProfilePostAdapter.PostViewHolder>(DiffCallback) {
 
-    class PostViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class PostViewHolder(
+        itemView: View,
+        private val onPostClick: (Post) -> Unit
+    ) : RecyclerView.ViewHolder(itemView) {
         private val photo: ImageView = itemView.findViewById(R.id.ivPetPhoto)
         private val name: TextView = itemView.findViewById(R.id.tvPetName)
         private val breed: TextView = itemView.findViewById(R.id.tvPetBreed)
@@ -23,6 +28,7 @@ class ProfilePostAdapter :
         fun bind(post: Post) {
             name.text = post.petName
             breed.text = post.breed.ifBlank { post.petType }
+            itemView.setOnClickListener { onPostClick(post) }
 
             if (post.mediaType == "image" && post.mediaUrl.isNotBlank()) {
                 photo.load(post.mediaUrl) {
@@ -39,7 +45,7 @@ class ProfilePostAdapter :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.profile_item_pet, parent, false)
-        return PostViewHolder(view)
+        return PostViewHolder(view, onPostClick)
     }
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {

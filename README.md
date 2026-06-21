@@ -25,7 +25,7 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * Firestore rules sederhana diterapkan manual melalui Firebase Console untuk membatasi profil dan post berdasarkan pemiliknya.
 * Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
 * `ProfileFragment` menampilkan profil Firestore dan post milik user yang sedang login.
-* `PetDetailFragment` tersedia sebagai destination Navigation, tetapi masih placeholder.
+* `PetDetailFragment` memuat satu post dari Firestore berdasarkan `postId`.
 
 ### Belum Selesai
 
@@ -33,7 +33,6 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `mediaUrl` masih kosong saat Add Post.
 * Kota di Add Post masih hardcode `"Indonesia"`.
 * `SearchFragment` masih template/placeholder.
-* `PetDetailFragment` masih placeholder.
 * Tombol like belum menyimpan state ke Firestore.
 * Alur adopsi lengkap seperti apply, approve, reject, dan koleksi `adoptions` belum tersedia.
 
@@ -87,9 +86,14 @@ app/src/main/
 |       |   |-- AuthViewModel.kt
 |       |   |-- LoginActivity.kt
 |       |   `-- RegisterActivity.kt
-|       `-- feed/
-|           |-- FeedViewModel.kt
-|           `-- Feedadapter.kt
+|       |-- detail/
+|       |   `-- PetDetailViewModel.kt
+|       |-- feed/
+|       |   |-- FeedViewModel.kt
+|       |   `-- Feedadapter.kt
+|       `-- profile/
+|           |-- ProfileViewModel.kt
+|           `-- ProfilePostAdapter.kt
 `-- res/
     |-- anim/
     |-- color/
