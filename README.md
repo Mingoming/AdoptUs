@@ -112,12 +112,12 @@ app/src/main/
 | Field | Tipe | Keterangan |
 |---|---|---|
 | id | String | UID Firebase Auth dan sama dengan ID dokumen |
-| username | String | Username user |
-| fullName | String | Nama lengkap |
+| username | String | Username user (3–30 karakter, regex: `^[A-Za-z0-9._]{3,30}$`) |
+| fullName | String | Nama lengkap (maksimal 80 karakter) |
 | photoUrl | String | URL foto profil, saat ini bisa kosong |
-| bio | String | Bio user |
-| city | String | Kota user |
-| whatsapp | String | Nomor WhatsApp user |
+| bio | String | Bio user (maksimal 300 karakter) |
+| city | String | Kota user (maksimal 80 karakter) |
+| whatsapp | String | Nomor WhatsApp user (maksimal 30 karakter) |
 | role | String | Default `user` |
 | createdAt | Timestamp | Waktu register |
 

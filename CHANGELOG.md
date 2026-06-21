@@ -3,18 +3,25 @@
 Semua perubahan penting pada proyek Android **AdoptUs** didokumentasikan di file ini.
 Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] - 2026-06-06
+## [Unreleased]
 
 ### Added
 
-* Menambahkan mapper `User.fromMap()` dan `User.toMap()` dengan fallback untuk data Firestore lama.
+* (Belum ada perubahan untuk versi berikutnya)
+
+## [0.6.0-alpha] - 2026-06-21
+
+### Added
+
+* Menambahkan mapper `User.fromMap()` dan `User.toMap()` dengan fallback untuk data Firestore lama agar skema `camelCase` dan `snake_case` tetap kompatibel.
 * Mendokumentasikan Firestore rules sederhana yang diterapkan manual untuk ownership profil dan post.
-* Menampilkan profil Firestore dan post milik user pada `ProfileFragment`.
-* Menambahkan halaman Pet Detail berbasis data Firestore dan `PetDetailViewModel`.
+* Menampilkan profil Firestore dan post milik user secara dinamis pada `ProfileFragment` menggunakan `ProfileViewModel` dan `ProfilePostAdapter`.
+* Menambahkan halaman Pet Detail berbasis data Firestore (`PetDetailFragment` & `PetDetailViewModel`) dan layout XML yang interaktif (`fragment_petdetail.xml`).
+* Menambahkan batas panjang karakter input dan validasi format regex di `RegisterActivity` dan `SettingFragment` untuk menghindari spamming field Firestore (maksimal username 30 karakter, nama lengkap 80 karakter, bio 300 karakter, kota 80 karakter, WhatsApp 30 karakter).
 
 ### Changed
 
-* Memperbarui README agar sesuai dengan kode terbaru: splash screen, Navigation Component, Firestore feed, AddPost, Setting, dan known gaps.
+* Memperbarui README agar sesuai dengan kode terbaru: splash screen, Navigation Component, Firestore feed, AddPost, Setting, skema camelCase, profil dinamis, detail dinamis, dan known gaps.
 * Merapikan CHANGELOG agar memakai teks ASCII yang konsisten dan tidak menampilkan karakter encoding rusak.
 * Menambahkan ADR `0005-current-implementation-baseline.md` sebagai baseline status implementasi terbaru.
 * Register email dan Google sekarang menulis schema user camelCase tanpa menyimpan email ke Firestore.
@@ -26,9 +33,10 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ### Fixed
 
-* Menghapus akun Firebase Auth yang baru dibuat jika penyimpanan profil Firestore saat register gagal.
+* Menghapus akun Firebase Auth yang baru dibuat jika penyimpanan profil Firestore saat register gagal (atomic rollback).
 
 ### Verified
+
 
 * `:app:compileDebugKotlin --no-daemon` berhasil dengan JDK lokal lengkap.
 * `:app:compileDebugJavaWithJavac --no-daemon` berhasil dengan JDK lokal lengkap.
