@@ -78,15 +78,68 @@ class PostRepository {
 
     // ── Upload ───────────────────────────────────────────────────────────────
 
+    // ── Likes ────────────────────────────────────────────────────────────────
+
+    // Toggle like state on a post
+    suspend fun toggleLike(postId: String, userId: String): Result<Boolean> {
+        return try {
+            val postRef = postsCollection.document(postId)
+            val postLikeRef = postRef.collection("likes").document(userId)
+            val userLikeRef = db.collection("users").document(userId).collection("likedPosts").document(postId)
+
+            val isLiked = db.runTransaction { transaction ->
+                val likeDoc = transaction.get(postLikeRef)
+                val exists = likeDoc.exists()
+                if (exists) {
+                    transaction.delete(postLikeRef)
+                    transaction.delete(userLikeRef)
+                    transaction.update(postRef, "likesCount", com.google.firebase.firestore.FieldValue.increment(-1))
+                    false
+                } else {
+                    transaction.set(postLikeRef, mapOf("likedAt" to com.google.firebase.Timestamp.now()))
+                    transaction.set(userLikeRef, mapOf("likedAt" to com.google.firebase.Timestamp.now()))
+                    transaction.update(postRef, "likesCount", com.google.firebase.firestore.FieldValue.increment(1))
+                    true
+                }
+            }.await()
+            Result.success(isLiked)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Get list of postIds liked by user
+    suspend fun getLikedPostIds(userId: String): Result<Set<String>> {
+        return try {
+            val snapshot = db.collection("users").document(userId)
+                .collection("likedPosts").get().await()
+            val ids = snapshot.documents.map { it.id }.toSet()
+            Result.success(ids)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ── Upload ───────────────────────────────────────────────────────────────
+
     suspend fun createPost(post: Post): Result<String> {
         return try {
             val uid = auth.currentUser?.uid
                 ?: return Result.failure(Exception("User not logged in"))
 
+            // Fetch owner info from users collection
+            val userDoc = db.collection("users").document(uid).get().await()
+            val ownerUsername = userDoc.getString("username") ?: ""
+            val ownerPhotoUrl = userDoc.getString("photoUrl") ?: userDoc.getString("photo_url") ?: ""
+            val ownerWhatsapp = userDoc.getString("whatsapp") ?: ""
+
             val docRef = postsCollection.document()
             val postWithId = post.copy(
                 postId = docRef.id,
-                userId = uid
+                userId = uid,
+                ownerUsername = ownerUsername,
+                ownerPhotoUrl = ownerPhotoUrl,
+                ownerWhatsapp = ownerWhatsapp
             )
             docRef.set(postWithId.toMap()).await()
             Result.success(docRef.id)

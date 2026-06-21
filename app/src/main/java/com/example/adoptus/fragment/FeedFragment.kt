@@ -69,7 +69,8 @@ class FeedFragment : Fragment() {
         adapter = FeedAdapter(
             onDetailClick = { post -> navigateToDetail(post) },
             onApplyClick  = { post -> navigateToDetail(post) },
-            onOwnerClick  = { post -> navigateToOwnerProfile(post.userId) }
+            onOwnerClick  = { post -> navigateToOwnerProfile(post.userId) },
+            onLikeClick   = { post -> viewModel.toggleLike(post) }
         )
 
         val layoutManager = LinearLayoutManager(requireContext())

@@ -190,11 +190,18 @@ class AddPostFragment : Fragment() {
                 }
             }
 
+            val age = ageText.toIntOrNull()
+            if (age == null || age < 0) {
+                etPetAge.error = "Please enter a valid age (whole number)"
+                etPetAge.requestFocus()
+                return@setOnClickListener
+            }
+
             val post = Post(
                 petName = name,
                 petType = type,
                 breed = breed,
-                age = ageText.toIntOrNull() ?: 0,
+                age = age,
                 ageUnit = ageUnit.ifEmpty { "Months" },
                 city = "Indonesia",
                 description = description,

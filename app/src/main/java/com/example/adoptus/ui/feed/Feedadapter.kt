@@ -21,7 +21,8 @@ import androidx.media3.ui.PlayerView
 class FeedAdapter(
     private val onDetailClick: (Post) -> Unit,
     private val onApplyClick: (Post) -> Unit,
-    private val onOwnerClick: (Post) -> Unit
+    private val onOwnerClick: (Post) -> Unit,
+    private val onLikeClick: (Post) -> Unit
 ) : ListAdapter<Post, FeedAdapter.FeedViewHolder>(DiffCallback) {
 
     inner class FeedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -97,51 +98,88 @@ class FeedAdapter(
                 }
             }
 
-            // Memuat info profil pembuat postingan secara dinamis dari Firestore
-            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            db.collection("users").document(post.userId).get()
-                .addOnSuccessListener { doc ->
-                    if (doc.exists()) {
-                        val whatsappNum = doc.getString("whatsapp")?.trim().orEmpty()
-                        val photoUrl = doc.getString("photoUrl")?.trim().orEmpty()
+            // Memuat info profil pembuat postingan: gunakan embedded owner info jika tersedia untuk mencegah N+1 query
+            val hasOwnerInfo = post.ownerUsername.isNotBlank()
+            if (hasOwnerInfo) {
+                if (post.ownerPhotoUrl.isNotBlank()) {
+                    ownerAvatar.load(post.ownerPhotoUrl) {
+                        crossfade(true)
+                        placeholder(R.drawable.ic_profile_placeholder)
+                        error(R.drawable.ic_profile_placeholder)
+                    }
+                } else {
+                    ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                }
 
-                        if (photoUrl.isNotBlank()) {
-                            ownerAvatar.load(photoUrl) {
-                                crossfade(true)
-                                placeholder(R.drawable.ic_profile_placeholder)
-                                error(R.drawable.ic_profile_placeholder)
+                whatsappButton.setOnClickListener {
+                    val targetUrl = if (post.ownerWhatsapp.isNotBlank()) {
+                        val cleanedNum = post.ownerWhatsapp.replace(Regex("[^0-9+]"), "")
+                        val formattedNum = when {
+                            cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
+                            cleanedNum.startsWith("+") -> cleanedNum.substring(1)
+                            else -> cleanedNum
+                        }
+                        "https://wa.me/$formattedNum?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                    } else {
+                        "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                    }
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
+                    itemView.context.startActivity(intent)
+                }
+            } else {
+                // Fallback untuk post lama (legacy posts)
+                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                db.collection("users").document(post.userId).get()
+                    .addOnSuccessListener { doc ->
+                        if (doc.exists()) {
+                            val whatsappNum = doc.getString("whatsapp")?.trim().orEmpty()
+                            val photoUrl = doc.getString("photoUrl")?.trim().orEmpty()
+
+                            if (photoUrl.isNotBlank()) {
+                                ownerAvatar.load(photoUrl) {
+                                    crossfade(true)
+                                    placeholder(R.drawable.ic_profile_placeholder)
+                                    error(R.drawable.ic_profile_placeholder)
+                                }
+                            } else {
+                                ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                            }
+
+                            whatsappButton.setOnClickListener {
+                                val targetUrl = if (whatsappNum.isNotBlank()) {
+                                    val cleanedNum = whatsappNum.replace(Regex("[^0-9+]"), "")
+                                    val formattedNum = when {
+                                        cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
+                                        cleanedNum.startsWith("+") -> cleanedNum.substring(1)
+                                        else -> cleanedNum
+                                    }
+                                    "https://wa.me/$formattedNum?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                                } else {
+                                    "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                                }
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
+                                itemView.context.startActivity(intent)
                             }
                         } else {
                             ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
                         }
-
-                        whatsappButton.setOnClickListener {
-                            val targetUrl = if (whatsappNum.isNotBlank()) {
-                                val cleanedNum = whatsappNum.replace(Regex("[^0-9+]"), "")
-                                val formattedNum = when {
-                                    cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
-                                    cleanedNum.startsWith("+") -> cleanedNum.substring(1)
-                                    else -> cleanedNum
-                                }
-                                "https://wa.me/$formattedNum?text=Halo, saya tertarik mengadopsi ${post.petName}"
-                            } else {
-                                "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
-                            }
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
-                            itemView.context.startActivity(intent)
-                        }
-                    } else {
+                    }
+                    .addOnFailureListener {
                         ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
                     }
-                }
-                .addOnFailureListener {
-                    ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
-                }
+            }
+
+            // Tint heart icon based on like status
+            if (post.isLikedByCurrentUser) {
+                likeButton.setColorFilter(androidx.core.content.ContextCompat.getColor(itemView.context, R.color.primary_orange))
+            } else {
+                likeButton.clearColorFilter()
+            }
 
             detailButton.setOnClickListener { onDetailClick(post) }
             applyButton.setOnClickListener { onApplyClick(post) }
             ownerAvatar.setOnClickListener { onOwnerClick(post) }
-            likeButton.setOnClickListener { }
+            likeButton.setOnClickListener { onLikeClick(post) }
         }
     }
 

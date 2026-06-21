@@ -29,6 +29,12 @@ data class Post(
 
     // Engagement
     val likesCount: Int = 0,
+    val isLikedByCurrentUser: Boolean = false,
+
+    // Embedded Owner info (untuk optimasi N+1 query)
+    val ownerUsername: String = "",
+    val ownerPhotoUrl: String = "",
+    val ownerWhatsapp: String = "",
 
     val createdAt: Timestamp? = null
 ) {
@@ -52,6 +58,10 @@ data class Post(
                 adoptionFee       = (map["adoptionFee"] as? Long)?.toInt() ?: 0,
                 status            = map["status"] as? String ?: "available",
                 likesCount        = (map["likesCount"] as? Long)?.toInt() ?: 0,
+                isLikedByCurrentUser = map["isLikedByCurrentUser"] as? Boolean ?: false,
+                ownerUsername     = map["ownerUsername"] as? String ?: "",
+                ownerPhotoUrl     = map["ownerPhotoUrl"] as? String ?: "",
+                ownerWhatsapp     = map["ownerWhatsapp"] as? String ?: "",
                 createdAt         = map["createdAt"] as? Timestamp
             )
         }
@@ -75,6 +85,10 @@ data class Post(
         "adoptionFee"       to adoptionFee,
         "status"            to status,
         "likesCount"        to likesCount,
+        "isLikedByCurrentUser" to isLikedByCurrentUser,
+        "ownerUsername"     to ownerUsername,
+        "ownerPhotoUrl"     to ownerPhotoUrl,
+        "ownerWhatsapp"     to ownerWhatsapp,
         "createdAt"         to createdAt
     )
 
