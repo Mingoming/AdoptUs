@@ -5,11 +5,23 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ## [Unreleased] - 2026-06-06
 
+### Added
+
+* Menambahkan mapper `User.fromMap()` dan `User.toMap()` dengan fallback untuk data Firestore lama.
+* Menambahkan Firestore rules sederhana untuk ownership profil dan post.
+
 ### Changed
 
 * Memperbarui README agar sesuai dengan kode terbaru: splash screen, Navigation Component, Firestore feed, AddPost, Setting, dan known gaps.
 * Merapikan CHANGELOG agar memakai teks ASCII yang konsisten dan tidak menampilkan karakter encoding rusak.
 * Menambahkan ADR `0005-current-implementation-baseline.md` sebagai baseline status implementasi terbaru.
+* Register email dan Google sekarang menulis schema user camelCase tanpa menyimpan email ke Firestore.
+* Setting membaca schema baru maupun field legacy, lalu menyimpan perubahan dalam camelCase.
+* Validasi nama lengkap dan username disamakan antara register dan Setting.
+
+### Fixed
+
+* Menghapus akun Firebase Auth yang baru dibuat jika penyimpanan profil Firestore saat register gagal.
 
 ### Verified
 

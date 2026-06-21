@@ -20,6 +20,9 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `FeedAdapter` mendukung media image via Coil dan video via Media3 ExoPlayer.
 * `AddPostFragment` menyimpan data teks hewan ke Firestore.
 * `SettingFragment` memuat dan menyimpan data profil user ke Firestore.
+* Register baru menyimpan profil user dengan field camelCase yang konsisten.
+* Setting tetap dapat membaca field lama seperti `full_name`, `photo_url`, dan `created_at`.
+* Firestore rules sederhana tersedia untuk membatasi profil dan post berdasarkan pemiliknya.
 * Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
 * `ProfileFragment` punya UI profile dan tombol setting.
 * `PetDetailFragment` tersedia sebagai destination Navigation, tetapi masih placeholder.
@@ -38,10 +41,7 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 ### Catatan Teknis
 
 * `btnBack` di `AddPostFragment` masih bertipe `ImageView`; sebaiknya diganti `ImageButton` untuk aksesibilitas.
-* Field user Firestore belum sepenuhnya konsisten:
-  * Register menyimpan `full_name`, `photo_url`, dan `created_at`.
-  * Setting membaca/menulis `fullName`, `bio`, `city`, dan `whatsapp`.
-  * Perlu normalisasi schema sebelum fitur profil dipakai lebih jauh.
+* Data user lama mungkin masih memakai `full_name`, `photo_url`, dan `created_at`. Aplikasi tetap membacanya sebagai fallback, tetapi user baru hanya ditulis dengan schema camelCase.
 * Root `build.gradle.kts` lokal di working tree saat ini memiliki perubahan yang menambahkan plugin Kotlin JVM di root project. Itu bukan pola utama proyek Android ini dan sebaiknya tidak di-commit sebelum dipastikan perlu.
 
 ## Tech Stack
@@ -108,17 +108,28 @@ app/src/main/
 
 | Field | Tipe | Keterangan |
 |---|---|---|
-| id | String | UID Firebase Auth |
+| id | String | UID Firebase Auth dan sama dengan ID dokumen |
 | username | String | Username user |
-| email | String | Email Firebase Auth |
-| full_name | String | Nama lengkap dari register |
-| photo_url | String | URL foto profil, saat ini bisa kosong |
+| fullName | String | Nama lengkap |
+| photoUrl | String | URL foto profil, saat ini bisa kosong |
+| bio | String | Bio user |
+| city | String | Kota user |
+| whatsapp | String | Nomor WhatsApp user |
 | role | String | Default `user` |
-| created_at | Timestamp | Waktu register |
-| fullName | String | Ditulis oleh SettingFragment saat update profil |
-| bio | String | Ditulis oleh SettingFragment |
-| city | String | Ditulis oleh SettingFragment |
-| whatsapp | String | Ditulis oleh SettingFragment |
+| createdAt | Timestamp | Waktu register |
+
+Email tetap disimpan oleh Firebase Authentication dan tidak ditulis ke dokumen user baru. Untuk kompatibilitas data development lama, aplikasi masih membaca `email`, `full_name`, `photo_url`, dan `created_at` jika field tersebut tersedia.
+
+### Firestore Rules
+
+File `firestore.rules` memakai aturan sederhana:
+
+* User hanya dapat membaca dan mengubah dokumen profil miliknya.
+* Role dan ID profil tidak dapat diubah lewat update biasa.
+* Post dapat dibaca user yang sudah login.
+* Post hanya dapat dibuat, diubah, atau dihapus oleh pemiliknya.
+
+Rules tidak dideploy otomatis dari repository ini.
 
 ### Koleksi `posts`
 

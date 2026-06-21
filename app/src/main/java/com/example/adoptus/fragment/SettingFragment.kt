@@ -11,12 +11,12 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.adoptus.R
+import com.example.adoptus.data.model.User
 import com.example.adoptus.ui.auth.LoginActivity
 import android.content.Intent
 import android.widget.ImageView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -67,7 +67,7 @@ class SettingFragment : Fragment() {
         // Simpan perubahan profil
         btnSave.setOnClickListener {
             val fullName  = etFullName.text.toString().trim()
-            val username  = etUsername.text.toString().trim()
+            val username  = etUsername.text.toString()
             val bio       = etBio.text.toString().trim()
             val city      = etCity.text.toString().trim()
             val whatsapp  = etWhatsapp.text.toString().trim()
@@ -80,8 +80,20 @@ class SettingFragment : Fragment() {
                 tilUsername.error = "Username is required"
                 return@setOnClickListener
             }
-            if (username.contains(" ")) {
-                tilUsername.error = "Username cannot contain spaces"
+            if (!User.isValidUsername(username)) {
+                tilUsername.error = "Username must be 3-30 characters without whitespace"
+                return@setOnClickListener
+            }
+            if (fullName.isEmpty()) {
+                Toast.makeText(context, "Full name is required", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (fullName.length > 80) {
+                Toast.makeText(context, "Full name is too long", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (bio.length > 300 || city.length > 80 || whatsapp.length > 30) {
+                Toast.makeText(context, "Profile field is too long", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -108,7 +120,7 @@ class SettingFragment : Fragment() {
                         ?: throw Exception("Not logged in")
 
                     // Update profil di Firestore
-                    val updates = mutableMapOf<String, Any>(
+                    val updates = mapOf(
                         "fullName" to fullName,
                         "username" to username,
                         "bio"      to bio,
@@ -165,11 +177,12 @@ class SettingFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val doc = db.collection("users").document(uid).get().await()
-                etFullName.setText(doc.getString("fullName") ?: "")
-                etUsername.setText(doc.getString("username") ?: "")
-                etBio.setText(doc.getString("bio") ?: "")
-                etCity.setText(doc.getString("city") ?: "")
-                etWhatsapp.setText(doc.getString("whatsapp") ?: "")
+                val user = User.fromMap(doc.id, doc.data.orEmpty())
+                etFullName.setText(user.fullName)
+                etUsername.setText(user.username)
+                etBio.setText(user.bio)
+                etCity.setText(user.city)
+                etWhatsapp.setText(user.whatsapp)
             } catch (e: Exception) {
                 // Kalau gagal load, biarkan field kosong
             }
