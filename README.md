@@ -28,18 +28,20 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `ProfileFragment` menampilkan profil Firestore dan post milik user yang sedang login.
 * `PetDetailFragment` memuat satu post dari Firestore berdasarkan `postId` dan memutar video dengan Media3.
 
+* Pemuatan profil dinamis dan navigasi langsung ke profil pemilik hewan dari Feed (`FeedFragment`) dan halaman pencarian (`SearchFragment`).
+* WhatsApp clickable di halaman profil untuk secara instan menghubungi pemilik hewan melalui chat WhatsApp.
+* Fitur Swipe-to-Refresh untuk memuat ulang data dengan animasi menarik di halaman Feed dan Profile.
+* Pilihan foto profil dengan fitur pemotongan (cropping) menggunakan pustaka UCrop.
+* Safe layout pada `AddPostFragment` dengan bar atas transparan dan padding bawah agar nyaman digunakan dengan sistem navigasi tombol/gestur Android.
+
 ### Belum Selesai
 
-* Kota di Add Post masih hardcode `"Indonesia"`.
-* `SearchFragment` masih template/placeholder.
-* Tombol like belum menyimpan state ke Firestore.
+* Tombol like belum menyimpan state ke Firestore (masih lokal/no-op).
 * Alur adopsi lengkap seperti apply, approve, reject, dan koleksi `adoptions` belum tersedia.
 
 ### Catatan Teknis
 
-* `btnBack` di `AddPostFragment` masih bertipe `ImageView`; sebaiknya diganti `ImageButton` untuk aksesibilitas.
 * Data user lama mungkin masih memakai `full_name`, `photo_url`, dan `created_at`. Aplikasi tetap membacanya sebagai fallback, tetapi user baru hanya ditulis dengan schema camelCase.
-* Root `build.gradle.kts` lokal di working tree saat ini memiliki perubahan yang menambahkan plugin Kotlin JVM di root project. Itu bukan pola utama proyek Android ini dan sebaiknya tidak di-commit sebelum dipastikan perlu.
 
 ## Tech Stack
 
