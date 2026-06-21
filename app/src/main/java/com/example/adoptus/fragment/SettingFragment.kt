@@ -1,5 +1,6 @@
 package com.example.adoptus.fragment
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -7,9 +8,11 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import coil.load
 import com.example.adoptus.R
 import com.example.adoptus.data.model.User
 import com.example.adoptus.ui.auth.LoginActivity
@@ -19,6 +22,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.example.adoptus.data.repository.PostMediaRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -26,6 +30,18 @@ class SettingFragment : Fragment() {
 
     private val auth = FirebaseAuth.getInstance()
     private val db   = FirebaseFirestore.getInstance()
+    private val mediaRepository = PostMediaRepository()
+    private var selectedAvatarUri: Uri? = null
+
+    private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            selectedAvatarUri = uri
+            view?.findViewById<ImageView>(R.id.ivAvatar)?.load(uri) {
+                crossfade(true)
+                error(R.drawable.ic_profile_placeholder)
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -37,6 +53,7 @@ class SettingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val ivAvatar          = view.findViewById<com.google.android.material.imageview.ShapeableImageView>(R.id.ivAvatar)
         val btnBack           = view.findViewById<ImageView>(R.id.btnBack)
         val btnSave           = view.findViewById<TextView>(R.id.btnSave)
         val btnLogout         = view.findViewById<TextView>(R.id.btnLogout)
@@ -56,12 +73,12 @@ class SettingFragment : Fragment() {
         val tilConfirmPassword= view.findViewById<TextInputLayout>(R.id.tilConfirmPassword)
 
         // Load data user dari Firestore
-        loadUserData(etFullName, etUsername, etBio, etCity, etWhatsapp)
+        loadUserData(ivAvatar, etFullName, etUsername, etBio, etCity, etWhatsapp)
 
         btnBack.setOnClickListener { findNavController().navigateUp() }
 
         btnChangePhoto.setOnClickListener {
-            Toast.makeText(context, "Photo upload coming soon (Storage pending)", Toast.LENGTH_SHORT).show()
+            pickMedia.launch("image/*")
         }
 
         // Simpan perubahan profil
@@ -119,14 +136,29 @@ class SettingFragment : Fragment() {
                     val uid = auth.currentUser?.uid
                         ?: throw Exception("Not logged in")
 
+                    var uploadedPhotoUrl: String? = null
+                    selectedAvatarUri?.let { avatarUri ->
+                        val result = mediaRepository.uploadMedia(
+                            contentResolver = requireContext().contentResolver,
+                            mediaUri = avatarUri,
+                            uid = uid
+                        ).getOrThrow()
+                        uploadedPhotoUrl = result.publicUrl
+                    }
+
                     // Update profil di Firestore
-                    val updates = mapOf(
+                    val updates = mutableMapOf<String, Any>(
                         "fullName" to fullName,
                         "username" to username,
                         "bio"      to bio,
                         "city"     to city,
                         "whatsapp" to whatsapp
                     )
+
+                    if (uploadedPhotoUrl != null) {
+                        updates["photoUrl"] = uploadedPhotoUrl!!
+                    }
+
                     db.collection("users").document(uid)
                         .update(updates)
                         .await()
@@ -167,6 +199,7 @@ class SettingFragment : Fragment() {
     }
 
     private fun loadUserData(
+        ivAvatar: com.google.android.material.imageview.ShapeableImageView,
         etFullName: TextInputEditText,
         etUsername: TextInputEditText,
         etBio: TextInputEditText,
@@ -183,6 +216,15 @@ class SettingFragment : Fragment() {
                 etBio.setText(user.bio)
                 etCity.setText(user.city)
                 etWhatsapp.setText(user.whatsapp)
+                if (user.photoUrl.isNotEmpty()) {
+                    ivAvatar.load(user.photoUrl) {
+                        crossfade(true)
+                        placeholder(R.drawable.ic_profile_placeholder)
+                        error(R.drawable.ic_profile_placeholder)
+                    }
+                } else {
+                    ivAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                }
             } catch (e: Exception) {
                 // Kalau gagal load, biarkan field kosong
             }
