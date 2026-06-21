@@ -22,6 +22,8 @@ class ProfilePostAdapter(
         private val onPostClick: (Post) -> Unit
     ) : RecyclerView.ViewHolder(itemView) {
         private val photo: ImageView = itemView.findViewById(R.id.ivPetPhoto)
+        private val videoIndicator: ImageView =
+            itemView.findViewById(R.id.imgVideoIndicator)
         private val name: TextView = itemView.findViewById(R.id.tvPetName)
         private val breed: TextView = itemView.findViewById(R.id.tvPetBreed)
 
@@ -30,13 +32,18 @@ class ProfilePostAdapter(
             breed.text = post.breed.ifBlank { post.petType }
             itemView.setOnClickListener { onPostClick(post) }
 
-            if (post.mediaType == "image" && post.mediaUrl.isNotBlank()) {
+            if (post.mediaType == "video") {
+                photo.setImageResource(R.drawable.placeholder)
+                videoIndicator.visibility = View.VISIBLE
+            } else if (post.mediaUrl.isNotBlank()) {
+                videoIndicator.visibility = View.GONE
                 photo.load(post.mediaUrl) {
                     crossfade(true)
                     placeholder(R.drawable.placeholder)
                     error(R.drawable.placeholder)
                 }
             } else {
+                videoIndicator.visibility = View.GONE
                 photo.setImageResource(R.drawable.placeholder)
             }
         }

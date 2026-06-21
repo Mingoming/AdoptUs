@@ -31,9 +31,6 @@ class FeedFragment : Fragment() {
     private lateinit var tvError: TextView
     private lateinit var btnRetry: TextView
 
-    // Simpan posisi item yang sedang terlihat
-    private var currentVisiblePosition = 0
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -70,20 +67,6 @@ class FeedFragment : Fragment() {
         // PagerSnapHelper = snap satu item per scroll (TikTok behavior)
         PagerSnapHelper().attachToRecyclerView(rvFeed)
 
-        // Detect item mana yang sedang di tengah layar → play/pause video
-        rvFeed.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                super.onScrollStateChanged(recyclerView, newState)
-                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                    val newPosition = layoutManager.findFirstCompletelyVisibleItemPosition()
-                    if (newPosition != RecyclerView.NO_POSITION && newPosition != currentVisiblePosition) {
-                        adapter.onItemInvisible(currentVisiblePosition)
-                        currentVisiblePosition = newPosition
-                        adapter.onItemVisible(currentVisiblePosition)
-                    }
-                }
-            }
-        })
     }
 
     private fun observeFeed() {
@@ -102,8 +85,6 @@ class FeedFragment : Fragment() {
                         layoutError.visibility  = View.GONE
                         rvFeed.visibility       = View.VISIBLE
                         adapter.submitList(state.posts)
-                        // Play video item pertama
-                        adapter.onItemVisible(0)
                     }
                     is FeedViewModel.FeedState.Empty -> {
                         progressBar.visibility  = View.GONE
@@ -130,13 +111,4 @@ class FeedFragment : Fragment() {
         findNavController().navigate(R.id.action_feed_to_detail, bundle)
     }
 
-    override fun onPause() {
-        super.onPause()
-        adapter.onItemInvisible(currentVisiblePosition)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        adapter.onItemVisible(currentVisiblePosition)
-    }
 }

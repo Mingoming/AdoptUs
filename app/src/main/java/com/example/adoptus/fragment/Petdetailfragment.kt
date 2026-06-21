@@ -14,6 +14,9 @@ import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import coil.load
@@ -24,6 +27,7 @@ import com.example.adoptus.ui.detail.PetDetailViewModel
 import com.example.adoptus.ui.detail.detailBreedAge
 import com.example.adoptus.ui.detail.detailFee
 import com.example.adoptus.ui.detail.hasDetailImage
+import com.example.adoptus.ui.detail.hasDetailVideo
 import kotlinx.coroutines.launch
 
 class PetDetailFragment : Fragment() {
@@ -36,6 +40,7 @@ class PetDetailFragment : Fragment() {
     private lateinit var errorLayout: LinearLayout
     private lateinit var errorText: TextView
     private lateinit var media: ImageView
+    private lateinit var videoPlayerView: PlayerView
     private lateinit var petName: TextView
     private lateinit var breedAge: TextView
     private lateinit var city: TextView
@@ -44,6 +49,7 @@ class PetDetailFragment : Fragment() {
     private lateinit var description: TextView
     private lateinit var vaccinated: TextView
     private lateinit var healthPassport: TextView
+    private var videoPlayer: ExoPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,6 +65,7 @@ class PetDetailFragment : Fragment() {
         errorLayout = view.findViewById(R.id.detailErrorLayout)
         errorText = view.findViewById(R.id.tvDetailError)
         media = view.findViewById(R.id.ivPetMedia)
+        videoPlayerView = view.findViewById(R.id.pvPetVideo)
         petName = view.findViewById(R.id.tvPetName)
         breedAge = view.findViewById(R.id.tvBreedAge)
         city = view.findViewById(R.id.tvCity)
@@ -117,14 +124,50 @@ class PetDetailFragment : Fragment() {
         healthPassport.text =
             "Health passport: ${if (post.hasHealthPassport) "Yes" else "No"}"
 
-        if (post.hasDetailImage()) {
+        if (post.hasDetailVideo()) {
+            media.visibility = View.GONE
+            videoPlayerView.visibility = View.VISIBLE
+            prepareVideo(post.mediaUrl)
+        } else if (post.hasDetailImage()) {
+            releaseVideoPlayer()
+            videoPlayerView.visibility = View.GONE
+            media.visibility = View.VISIBLE
             media.load(post.mediaUrl) {
                 crossfade(true)
                 placeholder(R.drawable.placeholder)
                 error(R.drawable.placeholder)
             }
         } else {
+            releaseVideoPlayer()
+            videoPlayerView.visibility = View.GONE
+            media.visibility = View.VISIBLE
             media.setImageResource(R.drawable.placeholder)
         }
+    }
+
+    private fun prepareVideo(url: String) {
+        releaseVideoPlayer()
+        videoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
+            videoPlayerView.player = player
+            player.setMediaItem(MediaItem.fromUri(url))
+            player.playWhenReady = false
+            player.prepare()
+        }
+    }
+
+    override fun onPause() {
+        videoPlayer?.pause()
+        super.onPause()
+    }
+
+    override fun onDestroyView() {
+        releaseVideoPlayer()
+        super.onDestroyView()
+    }
+
+    private fun releaseVideoPlayer() {
+        videoPlayerView.player = null
+        videoPlayer?.release()
+        videoPlayer = null
     }
 }

@@ -17,20 +17,19 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `BottomNavigationView` terhubung ke `NavController` melalui `setupWithNavController()`.
 * Feed vertikal full-screen dari koleksi `posts` Firestore.
 * `FeedViewModel` memakai `StateFlow`; `PostRepository` memakai `callbackFlow` untuk update real-time.
-* `FeedAdapter` mendukung media image via Coil dan video via Media3 ExoPlayer.
+* Feed dan Profile menampilkan gambar melalui Coil; post video memakai placeholder dengan ikon play tanpa autoplay.
 * `AddPostFragment` menyimpan data teks hewan ke Firestore.
-* Add Post dapat memilih satu foto dari galeri dan mengunggahnya ke Supabase Storage.
+* Add Post dapat memilih satu gambar atau video MP4 dari galeri dan mengunggahnya ke Supabase Storage.
 * `SettingFragment` memuat dan menyimpan data profil user ke Firestore.
 * Register baru menyimpan profil user dengan field camelCase yang konsisten.
 * Setting tetap dapat membaca field lama seperti `full_name`, `photo_url`, dan `created_at`.
 * Firestore rules sederhana diterapkan manual melalui Firebase Console untuk membatasi profil dan post berdasarkan pemiliknya.
 * Logout dari `SettingFragment` membersihkan session Firebase dan kembali ke `LoginActivity`.
 * `ProfileFragment` menampilkan profil Firestore dan post milik user yang sedang login.
-* `PetDetailFragment` memuat satu post dari Firestore berdasarkan `postId`.
+* `PetDetailFragment` memuat satu post dari Firestore berdasarkan `postId` dan memutar video dengan Media3.
 
 ### Belum Selesai
 
-* Upload video belum tersedia.
 * Kota di Add Post masih hardcode `"Indonesia"`.
 * `SearchFragment` masih template/placeholder.
 * Tombol like belum menyimpan state ke Firestore.
@@ -72,7 +71,7 @@ app/src/main/
 |   |   |   `-- Post.kt
 |   |   `-- repository/
 |   |       |-- AuthRepository.kt
-|   |       |-- PostImageRepository.kt
+|   |       |-- PostMediaRepository.kt
 |   |       `-- PostRepository.kt
 |   |-- fragment/
 |   |   |-- FeedFragment.kt
@@ -148,8 +147,8 @@ Repository ini tidak menyimpan atau mendeploy file rules secara otomatis.
 | ageUnit | String | `Months` atau `Years` |
 | city | String | Kota lokasi hewan |
 | description | String | Deskripsi |
-| mediaUrl | String | Public URL Supabase atau kosong jika post tanpa foto |
-| mediaType | String | Saat ini selalu `image` |
+| mediaUrl | String | Public URL Supabase atau kosong jika post tanpa media |
+| mediaType | String | `image` atau `video` |
 | isVaccinated | Boolean | Status vaksin |
 | hasHealthPassport | Boolean | Status buku kesehatan |
 | adoptionFee | Number | `0` berarti gratis |
@@ -203,18 +202,18 @@ Gunakan publishable key, bukan secret key atau `service_role`. Nilai aktual tida
 Policy upload Supabase Storage yang diperlukan:
 
 ```sql
-create policy "Allow post image uploads"
+create policy "Allow post media uploads"
 on storage.objects
 for insert
 to anon
 with check (
   bucket_id = 'adoptus-post-images'
   and (storage.foldername(name))[1] = 'posts'
-  and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp')
+  and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp', 'mp4')
 );
 ```
 
-Atur bucket agar hanya menerima `image/jpeg`, `image/png`, dan `image/webp` dengan ukuran maksimum 5 MB. Aplikasi juga melakukan validasi yang sama sebelum upload.
+Atur bucket agar hanya menerima `image/jpeg`, `image/png`, `image/webp`, dan `video/mp4` dengan ukuran maksimum 20 MB. Aplikasi membatasi gambar maksimal 5 MB dan video MP4 maksimal 20 MB sebelum upload.
 
 Cleanup file setelah kegagalan Firestore dilakukan secara best-effort. Tanpa policy `delete` untuk role `anon`, Supabase akan menolak cleanup tersebut; aplikasi tetap melaporkan kegagalan post tanpa menyimpan dokumen Firestore.
 

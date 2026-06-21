@@ -7,7 +7,13 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
-* (Belum ada perubahan untuk versi berikutnya)
+* Add Post dapat memilih dan mengunggah video MP4 maksimal 20 MB ke Supabase Storage.
+* Pet Detail dapat memutar video dengan kontrol Media3 ExoPlayer.
+
+### Changed
+
+* Repository upload media mendukung gambar JPEG/PNG/WebP maksimal 5 MB dan video MP4 maksimal 20 MB.
+* Feed dan Profile menampilkan placeholder dengan ikon play untuk post video tanpa autoplay.
 
 ## [0.6.0-alpha] - 2026-06-21
 

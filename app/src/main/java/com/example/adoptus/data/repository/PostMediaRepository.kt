@@ -9,43 +9,56 @@ import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
-data class UploadedPostImage(
+data class UploadedPostMedia(
     val path: String,
-    val publicUrl: String
+    val publicUrl: String,
+    val mediaType: String
 )
 
-object PostImageUploadPolicy {
-    const val MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024
+object PostMediaUploadPolicy {
+    const val MAX_IMAGE_SIZE_BYTES = 5L * 1024 * 1024
+    const val MAX_VIDEO_SIZE_BYTES = 20L * 1024 * 1024
 
     private val supportedMimeTypes = setOf(
         "image/jpeg",
         "image/png",
-        "image/webp"
+        "image/webp",
+        "video/mp4"
     )
 
     fun isSupportedMimeType(mimeType: String): Boolean =
         mimeType in supportedMimeTypes
 
-    fun isAllowedSize(size: Long): Boolean =
-        size in 1..MAX_FILE_SIZE_BYTES
+    fun isAllowedSize(mimeType: String, size: Long): Boolean {
+        val maxSize = if (mimeType == "video/mp4") {
+            MAX_VIDEO_SIZE_BYTES
+        } else {
+            MAX_IMAGE_SIZE_BYTES
+        }
+        return size in 1..maxSize
+    }
 
     fun buildPath(uid: String, timestamp: Long, mimeType: String): String {
         val extension = when (mimeType) {
             "image/png" -> "png"
             "image/webp" -> "webp"
+            "video/mp4" -> "mp4"
             else -> "jpg"
         }
         return "posts/$uid/$timestamp.$extension"
     }
+
+    fun mediaTypeFor(mimeType: String): String =
+        if (mimeType == "video/mp4") "video" else "image"
 }
 
-class PostImageRepository {
+class PostMediaRepository {
 
-    suspend fun uploadImage(
+    suspend fun uploadMedia(
         contentResolver: ContentResolver,
-        imageUri: Uri,
+        mediaUri: Uri,
         uid: String
-    ): Result<UploadedPostImage> = withContext(Dispatchers.IO) {
+    ): Result<UploadedPostMedia> = withContext(Dispatchers.IO) {
         runCatching {
             val baseUrl = BuildConfig.SUPABASE_URL.trimEnd('/')
             val publishableKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
@@ -53,13 +66,19 @@ class PostImageRepository {
                 "Supabase configuration is missing"
             }
 
-            val mimeType = contentResolver.getType(imageUri)
-                ?: throw IllegalArgumentException("Unable to detect image type")
-            require(PostImageUploadPolicy.isSupportedMimeType(mimeType)) {
-                "Only JPEG, PNG, and WebP images are supported"
+            val mimeType = contentResolver.getType(mediaUri)
+                ?: throw IllegalArgumentException("Unable to detect media type")
+            require(PostMediaUploadPolicy.isSupportedMimeType(mimeType)) {
+                "Only JPEG, PNG, WebP, and MP4 files are supported"
             }
 
-            val bytes = contentResolver.openInputStream(imageUri)?.use { input ->
+            val maxSize = if (mimeType == "video/mp4") {
+                PostMediaUploadPolicy.MAX_VIDEO_SIZE_BYTES
+            } else {
+                PostMediaUploadPolicy.MAX_IMAGE_SIZE_BYTES
+            }
+
+            val bytes = contentResolver.openInputStream(mediaUri)?.use { input ->
                 val output = ByteArrayOutputStream()
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 var totalBytes = 0L
@@ -68,19 +87,20 @@ class PostImageRepository {
                     val read = input.read(buffer)
                     if (read == -1) break
                     totalBytes += read
-                    if (totalBytes > PostImageUploadPolicy.MAX_FILE_SIZE_BYTES) {
-                        throw IllegalArgumentException("Image must be 5 MB or smaller")
+                    if (totalBytes > maxSize) {
+                        val limit = if (mimeType == "video/mp4") "20 MB" else "5 MB"
+                        throw IllegalArgumentException("Media must be $limit or smaller")
                     }
                     output.write(buffer, 0, read)
                 }
                 output.toByteArray()
-            } ?: throw IllegalArgumentException("Unable to read selected image")
+            } ?: throw IllegalArgumentException("Unable to read selected media")
 
-            require(PostImageUploadPolicy.isAllowedSize(bytes.size.toLong())) {
-                "Image must be 5 MB or smaller"
+            require(PostMediaUploadPolicy.isAllowedSize(mimeType, bytes.size.toLong())) {
+                "Selected media has an invalid size"
             }
 
-            val path = PostImageUploadPolicy.buildPath(
+            val path = PostMediaUploadPolicy.buildPath(
                 uid = uid,
                 timestamp = System.currentTimeMillis(),
                 mimeType = mimeType
@@ -92,17 +112,18 @@ class PostImageRepository {
                 connection.setRequestProperty("x-upsert", "false")
                 connection.doOutput = true
                 connection.outputStream.use { it.write(bytes) }
-                connection.requireSuccess("Image upload failed")
+                connection.requireSuccess("Media upload failed")
             }
 
-            UploadedPostImage(
+            UploadedPostMedia(
                 path = path,
-                publicUrl = "$baseUrl/storage/v1/object/public/$BUCKET_NAME/$path"
+                publicUrl = "$baseUrl/storage/v1/object/public/$BUCKET_NAME/$path",
+                mediaType = PostMediaUploadPolicy.mediaTypeFor(mimeType)
             )
         }
     }
 
-    suspend fun deleteImage(path: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun deleteMedia(path: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val baseUrl = BuildConfig.SUPABASE_URL.trimEnd('/')
             val publishableKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
@@ -112,7 +133,7 @@ class PostImageRepository {
 
             val deleteUrl = "$baseUrl/storage/v1/object/$BUCKET_NAME/$path"
             openConnection(deleteUrl, "DELETE", publishableKey).useConnection { connection ->
-                connection.requireSuccess("Image cleanup failed")
+                connection.requireSuccess("Media cleanup failed")
             }
         }
     }

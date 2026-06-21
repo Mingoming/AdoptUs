@@ -57,3 +57,6 @@ internal fun Post.detailFee(): String =
 
 internal fun Post.hasDetailImage(): Boolean =
     mediaType == "image" && mediaUrl.isNotBlank()
+
+internal fun Post.hasDetailVideo(): Boolean =
+    mediaType == "video" && mediaUrl.isNotBlank()

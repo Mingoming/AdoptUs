@@ -22,9 +22,9 @@ import coil.load
 import com.example.adoptus.MainActivity
 import com.example.adoptus.R
 import com.example.adoptus.data.model.Post
-import com.example.adoptus.data.repository.PostImageRepository
+import com.example.adoptus.data.repository.PostMediaRepository
 import com.example.adoptus.data.repository.PostRepository
-import com.example.adoptus.data.repository.UploadedPostImage
+import com.example.adoptus.data.repository.UploadedPostMedia
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -33,28 +33,55 @@ class AddPostFragment : Fragment() {
 
     private val auth = FirebaseAuth.getInstance()
     private val postRepository = PostRepository()
-    private val imageRepository = PostImageRepository()
+    private val mediaRepository = PostMediaRepository()
 
-    private var selectedImageUri: Uri? = null
+    private var selectedMediaUri: Uri? = null
+    private var selectedMediaType: String? = null
     private var isUploading = false
 
     private lateinit var imagePreview: ImageView
+    private lateinit var videoIndicator: ImageView
     private lateinit var mediaPrompt: View
     private lateinit var loadingOverlay: FrameLayout
     private lateinit var uploadButton: TextView
     private lateinit var selectMediaButton: View
 
-    private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        selectedImageUri = uri
+    private val pickMedia = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        selectedMediaUri = uri
         if (uri == null) {
+            selectedMediaType = null
             imagePreview.visibility = View.GONE
+            videoIndicator.visibility = View.GONE
             mediaPrompt.visibility = View.VISIBLE
         } else {
+            val mimeType = requireContext().contentResolver.getType(uri)
+            selectedMediaType = when (mimeType) {
+                "video/mp4" -> "video"
+                "image/jpeg", "image/png", "image/webp" -> "image"
+                else -> null
+            }
+
+            if (selectedMediaType == null) {
+                selectedMediaUri = null
+                Toast.makeText(
+                    context,
+                    "Only JPEG, PNG, WebP, and MP4 files are supported",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@registerForActivityResult
+            }
+
             mediaPrompt.visibility = View.GONE
             imagePreview.visibility = View.VISIBLE
-            imagePreview.load(uri) {
-                crossfade(true)
-                error(R.drawable.placeholder)
+            if (selectedMediaType == "video") {
+                imagePreview.setImageResource(R.drawable.placeholder)
+                videoIndicator.visibility = View.VISIBLE
+            } else {
+                videoIndicator.visibility = View.GONE
+                imagePreview.load(uri) {
+                    crossfade(true)
+                    error(R.drawable.placeholder)
+                }
             }
         }
     }
@@ -72,6 +99,7 @@ class AddPostFragment : Fragment() {
         uploadButton = view.findViewById(R.id.btnUpload)
         selectMediaButton = view.findViewById(R.id.btnSelectMedia)
         imagePreview = view.findViewById(R.id.imgSelectedPhoto)
+        videoIndicator = view.findViewById(R.id.imgVideoIndicator)
         mediaPrompt = view.findViewById(R.id.mediaPrompt)
         loadingOverlay = view.findViewById(R.id.addPostLoadingOverlay)
 
@@ -113,7 +141,7 @@ class AddPostFragment : Fragment() {
 
         btnBack.setOnClickListener { findNavController().navigateUp() }
         selectMediaButton.setOnClickListener {
-            if (!isUploading) pickImage.launch("image/*")
+            if (!isUploading) pickMedia.launch("*/*")
         }
 
         uploadButton.setOnClickListener {
@@ -185,28 +213,28 @@ class AddPostFragment : Fragment() {
         setUploading(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            var uploadedImage: UploadedPostImage? = null
+            var uploadedMedia: UploadedPostMedia? = null
 
             try {
                 val uid = auth.currentUser?.uid
                     ?: throw IllegalStateException("Not logged in")
 
-                uploadedImage = selectedImageUri?.let { imageUri ->
-                    imageRepository.uploadImage(
+                uploadedMedia = selectedMediaUri?.let { mediaUri ->
+                    mediaRepository.uploadMedia(
                         contentResolver = requireContext().contentResolver,
-                        imageUri = imageUri,
+                        mediaUri = mediaUri,
                         uid = uid
                     ).getOrThrow()
                 }
 
                 val postWithMedia = post.copy(
-                    mediaUrl = uploadedImage?.publicUrl.orEmpty(),
-                    mediaType = "image"
+                    mediaUrl = uploadedMedia?.publicUrl.orEmpty(),
+                    mediaType = uploadedMedia?.mediaType ?: "image"
                 )
 
                 postRepository.createPost(postWithMedia).getOrElse { postError ->
-                    uploadedImage?.let { uploaded ->
-                        imageRepository.deleteImage(uploaded.path)
+                    uploadedMedia?.let { uploaded ->
+                        mediaRepository.deleteMedia(uploaded.path)
                             .exceptionOrNull()
                             ?.let(postError::addSuppressed)
                     }

@@ -13,14 +13,17 @@
         android:scaleType="centerCrop"
         android:visibility="visible" />
 
-    <!-- Media: Video (ExoPlayer) -->
-    <androidx.media3.ui.PlayerView
-        android:id="@+id/pvVideo"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:use_controller="false"
-        app:resize_mode="zoom"
-        android:visibility="gone" />
+    <ImageView
+        android:id="@+id/imgVideoIndicator"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_gravity="center"
+        android:background="#99000000"
+        android:contentDescription="Video"
+        android:padding="18dp"
+        android:src="@android:drawable/ic_media_play"
+        android:visibility="gone"
+        app:tint="@color/white" />
 
     <!-- Gradient overlay bawah agar teks terbaca -->
     <View
