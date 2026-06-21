@@ -7,6 +7,12 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ### Added
 
+* Mengintegrasikan pustaka `UCrop` untuk fitur memotong (crop) dan mengatur ukuran foto profil saat pengguna memilih foto di `SettingFragment`.
+* Menambahkan fitur Pull-to-Refresh (`SwipeRefreshLayout`) pada `FeedFragment` dan `ProfileFragment` dengan kustomisasi warna spinner oranye utama dan optimalisasi visual (menghindari double indicator loading & flicker).
+* Mengubah tampilan kolom input di `SettingFragment` menggunakan background kartu putih bersih (`@color/white`), sudut melingkar 12dp, ketebalan border 1.5dp, serta selector warna border kustom `input_stroke_color.xml` untuk keterbacaan/kontras yang tinggi.
+* Menambahkan batas safe area bawah berupa padding 80dp dan `clipToPadding="false"` pada formulir `AddPostFragment` agar tidak terpotong oleh bilah navigasi sistem.
+* Menyerasikan bilah atas `AddPostFragment` agar transparan dan membaur dengan latar belakang halaman tanpa garis batas keras atau bayangan.
+* Menambahkan tema kustom `Theme.AdoptUs.UCrop` dengan `fitsSystemWindows="true"` dan menyembunyikan kontrol rotasi/skala bagian bawah pada alat pemotong foto profil agar tampilan crop menjadi lebih rapi dan bersih.
 * Add Post dapat memilih dan mengunggah video MP4 maksimal 20 MB ke Supabase Storage.
 * Pet Detail dapat memutar video dengan kontrol Media3 ExoPlayer.
 * Menambahkan `SplashActivity` dan `activity_splash.xml` yang mengimplementasikan animasi pembuka aplikasi (Overshoot bounce logo/text pada entry, dan swipe-up + fade-out pada exit) sesuai dengan prototipe HTML.
@@ -22,6 +28,7 @@ Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/
 
 ### Changed
 
+* Mengoptimalkan deteksi tipe file MIME di `PostMediaRepository` agar mendukung skema URI `file://` lokal dan memiliki fallback tipe ekstensi file, menyelesaikan kesalahan "Unable to detect media type" saat mengunggah foto profil hasil pangkasan.
 * Repository upload media mendukung gambar JPEG/PNG/WebP maksimal 5 MB dan video MP4 maksimal 20 MB.
 * Feed dan Profile menampilkan placeholder dengan ikon play untuk post video tanpa autoplay.
 
