@@ -1,5 +1,6 @@
 package com.example.adoptus.data.repository
 
+import com.example.adoptus.data.model.Adoption
 import com.example.adoptus.data.model.Post
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -191,5 +192,86 @@ class PostRepository {
                 trySend(Result.success(posts))
             }
         awaitClose { listener.remove() }
+    }
+
+    // ── Adoptions ────────────────────────────────────────────────────────────
+
+    private val adoptionsCollection = db.collection("adoptions")
+
+    // Cek apakah user sudah punya pending adoption untuk post tertentu
+    suspend fun checkPendingAdoption(postId: String, adopterId: String): Result<Boolean> {
+        return try {
+            val snapshot = adoptionsCollection
+                .whereEqualTo("postId", postId)
+                .whereEqualTo("adopterId", adopterId)
+                .whereEqualTo("status", "pending")
+                .get()
+                .await()
+            Result.success(!snapshot.isEmpty)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Ajukan adopsi baru
+    suspend fun applyForAdoption(postId: String, petName: String, ownerId: String, adopterId: String): Result<String> {
+        return try {
+            // Fetch adopter name from user doc
+            val adopterDoc = db.collection("users").document(adopterId).get().await()
+            val adopterName = adopterDoc.getString("fullName") ?: adopterDoc.getString("full_name") ?: "Adopter"
+
+            val docRef = adoptionsCollection.document()
+            val adoption = Adoption(
+                adoptionId = docRef.id,
+                postId = postId,
+                petName = petName,
+                adopterId = adopterId,
+                adopterName = adopterName,
+                ownerId = ownerId,
+                status = "pending",
+                createdAt = com.google.firebase.Timestamp.now(),
+                updatedAt = com.google.firebase.Timestamp.now()
+            )
+            docRef.set(adoption.toMap()).await()
+            Result.success(docRef.id)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Ambil request adopsi masuk untuk pemilik post secara real-time
+    fun getIncomingAdoptions(ownerId: String): Flow<Result<List<Adoption>>> = callbackFlow {
+        val listener = adoptionsCollection
+            .whereEqualTo("ownerId", ownerId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val adoptions = snapshot?.documents?.mapNotNull { doc ->
+                    doc.data?.let { Adoption.fromMap(doc.id, it) }
+                }?.sortedByDescending { it.createdAt } ?: emptyList()
+                trySend(Result.success(adoptions))
+            }
+        awaitClose { listener.remove() }
+    }
+
+    // Update status pengajuan adopsi (Approve/Reject)
+    suspend fun updateAdoptionStatus(adoptionId: String, postId: String, newStatus: String): Result<Unit> {
+        return try {
+            db.runBatch { batch ->
+                val adoptionRef = adoptionsCollection.document(adoptionId)
+                batch.update(adoptionRef, "status", newStatus)
+                batch.update(adoptionRef, "updatedAt", com.google.firebase.Timestamp.now())
+
+                if (newStatus == "approved") {
+                    val postRef = postsCollection.document(postId)
+                    batch.update(postRef, "status", "adopted")
+                }
+            }.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }

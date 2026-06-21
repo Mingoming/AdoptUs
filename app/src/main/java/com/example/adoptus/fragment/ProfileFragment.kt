@@ -78,6 +78,10 @@ class ProfileFragment : Fragment() {
             findNavController().navigate(R.id.action_profile_to_setting)
         }
 
+        view.findViewById<ImageButton>(R.id.btnInbox).setOnClickListener {
+            findNavController().navigate(R.id.action_profile_to_inbox)
+        }
+
         view.findViewById<RecyclerView>(R.id.rvPetGrid).apply {
             layoutManager = GridLayoutManager(requireContext(), 3)
             adapter = postAdapter
@@ -96,6 +100,7 @@ class ProfileFragment : Fragment() {
         val currentUid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
         val isOwnProfile = userId == null || userId == currentUid
         view?.findViewById<ImageButton>(R.id.btnSetting)?.visibility = if (isOwnProfile) View.VISIBLE else View.GONE
+        view?.findViewById<ImageButton>(R.id.btnInbox)?.visibility = if (isOwnProfile) View.VISIBLE else View.GONE
     }
 
     private fun render(state: ProfileUiState) {

@@ -181,6 +181,16 @@ class FeedAdapter(
             ownerAvatar.setOnClickListener { onOwnerClick(post) }
             likeButton.setOnClickListener { onLikeClick(post) }
         }
+
+        fun pausePlayer() {
+            exoPlayer?.pause()
+        }
+
+        fun releasePlayer() {
+            exoPlayer?.release()
+            exoPlayer = null
+            pvVideo.player = null
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedViewHolder {
@@ -192,6 +202,16 @@ class FeedAdapter(
 
     override fun onBindViewHolder(holder: FeedViewHolder, position: Int) {
         holder.bind(getItem(position))
+    }
+
+    override fun onViewRecycled(holder: FeedViewHolder) {
+        super.onViewRecycled(holder)
+        holder.releasePlayer()
+    }
+
+    override fun onViewDetachedFromWindow(holder: FeedViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+        holder.pausePlayer()
     }
 
     companion object {
