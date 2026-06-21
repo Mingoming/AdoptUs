@@ -55,6 +55,7 @@ class SettingFragment : Fragment() {
             val options = com.yalantis.ucrop.UCrop.Options().apply {
                 setCircleDimmedLayer(true)
                 setShowCropGrid(false)
+                setHideBottomControls(true)
                 setCompressionFormat(android.graphics.Bitmap.CompressFormat.JPEG)
                 setCompressionQuality(90)
                 setToolbarColor(android.graphics.Color.parseColor("#E8693A"))

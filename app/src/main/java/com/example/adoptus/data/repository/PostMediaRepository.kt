@@ -66,8 +66,23 @@ class PostMediaRepository {
                 "Supabase configuration is missing"
             }
 
-            val mimeType = contentResolver.getType(mediaUri)
-                ?: throw IllegalArgumentException("Unable to detect media type")
+            var mimeType = contentResolver.getType(mediaUri)
+            if (mimeType == null) {
+                val extension = android.webkit.MimeTypeMap.getFileExtensionFromUrl(mediaUri.toString())
+                if (!extension.isNullOrEmpty()) {
+                    mimeType = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.lowercase())
+                }
+            }
+            if (mimeType == null) {
+                val path = mediaUri.path.orEmpty()
+                mimeType = when {
+                    path.endsWith(".png", ignoreCase = true) -> "image/png"
+                    path.endsWith(".webp", ignoreCase = true) -> "image/webp"
+                    path.endsWith(".mp4", ignoreCase = true) -> "video/mp4"
+                    else -> "image/jpeg"
+                }
+            }
+
             require(PostMediaUploadPolicy.isSupportedMimeType(mimeType)) {
                 "Only JPEG, PNG, WebP, and MP4 files are supported"
             }

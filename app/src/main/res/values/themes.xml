@@ -25,4 +25,12 @@
 
     </style>
 
+    <!-- UCrop Theme with FitsSystemWindows for Safe Area -->
+    <style name="Theme.AdoptUs.UCrop" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:fitsSystemWindows">true</item>
+        <item name="colorPrimary">#E8693A</item>
+        <item name="colorPrimaryDark">#D05629</item>
+        <item name="colorAccent">#E8693A</item>
+    </style>
+
 </resources>

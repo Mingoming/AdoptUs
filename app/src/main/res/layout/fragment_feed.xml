@@ -5,11 +5,18 @@
     android:background="#000000"
     android:paddingTop="@dimen/screen_top_safe_padding">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvFeed"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:overScrollMode="never" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFeed"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:overScrollMode="never" />
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"

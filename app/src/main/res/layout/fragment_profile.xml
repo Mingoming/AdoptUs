@@ -36,182 +36,188 @@
             android:scaleType="fitCenter"
             android:src="@drawable/ic_setting"
             app:tint="@color/primary_orange" />
-    </RelativeLayout>
+     </RelativeLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/topBar">
 
-        <LinearLayout
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="24dp">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="16dp">
-
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/ivAvatar"
-                    android:layout_width="80dp"
-                    android:layout_height="80dp"
-                    android:background="#EADCC9"
-                    android:contentDescription="Profile photo"
-                    android:padding="5dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_profile_placeholder"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
-
-                <TextView
-                    android:id="@+id/tvProfileName"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="8dp"
-                    android:textColor="@color/gray_hint"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/ivAvatar"
-                    app:layout_constraintTop_toTopOf="@id/ivAvatar"
-                    tools:text="Full Name" />
-
-                <LinearLayout
-                    android:id="@+id/lytStats"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@id/ivAvatar"
-                    app:layout_constraintTop_toBottomOf="@id/tvProfileName">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/tvPostCount"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textColor="@color/primary_orange"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Posts"
-                            android:textColor="@color/light_gray"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <androidx.constraintlayout.widget.Barrier
-                    android:id="@+id/profileHeaderBarrier"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:barrierDirection="bottom"
-                    app:constraint_referenced_ids="ivAvatar,lytStats" />
-
-                <TextView
-                    android:id="@+id/tvBio"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:textColor="@color/black"
-                    android:textSize="14sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/profileHeaderBarrier"
-                    tools:text="Short profile bio" />
-
-                <TextView
-                    android:id="@+id/tvLocation"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:textColor="@color/light_gray"
-                    android:textSize="13sp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvBio"
-                    tools:text="Makassar" />
-
-                <TextView
-                    android:id="@+id/tvWhatsapp"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textColor="@color/light_gray"
-                    android:textSize="13sp"
-                    android:visibility="gone"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvLocation"
-                    tools:text="WhatsApp: 628123456789"
-                    tools:visibility="visible" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            android:layout_height="match_parent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:paddingBottom="24dp">
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:contentDescription="Posts"
-                    android:src="@drawable/ic_grid"
-                    app:tint="@color/primary_orange" />
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
 
-                <TextView
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivAvatar"
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:background="#EADCC9"
+                        android:contentDescription="Profile photo"
+                        android:padding="5dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_profile_placeholder"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full" />
+
+                    <TextView
+                        android:id="@+id/tvProfileName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/gray_hint"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/ivAvatar"
+                        app:layout_constraintTop_toTopOf="@id/ivAvatar"
+                        tools:text="Full Name" />
+
+                    <LinearLayout
+                        android:id="@+id/lytStats"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/ivAvatar"
+                        app:layout_constraintTop_toBottomOf="@id/tvProfileName">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvPostCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textColor="@color/primary_orange"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Posts"
+                                android:textColor="@color/light_gray"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <androidx.constraintlayout.widget.Barrier
+                        android:id="@+id/profileHeaderBarrier"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:barrierDirection="bottom"
+                        app:constraint_referenced_ids="ivAvatar,lytStats" />
+
+                    <TextView
+                        android:id="@+id/tvBio"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:textColor="@color/black"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/profileHeaderBarrier"
+                        tools:text="Short profile bio" />
+
+                    <TextView
+                        android:id="@+id/tvLocation"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/light_gray"
+                        android:textSize="13sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/tvBio"
+                        tools:text="Makassar" />
+
+                    <TextView
+                        android:id="@+id/tvWhatsapp"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/light_gray"
+                        android:textSize="13sp"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/tvLocation"
+                        tools:text="WhatsApp: 628123456789"
+                        tools:visibility="visible" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="Posts"
+                        android:src="@drawable/ic_grid"
+                        app:tint="@color/primary_orange" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="Posts"
+                        android:textColor="@color/gray_hint"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/profileProgressBar"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="Posts"
-                    android:textColor="@color/gray_hint"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp" />
+
+                <TextView
+                    android:id="@+id/tvProfileMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:textColor="@color/light_gray"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvPetGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:nestedScrollingEnabled="false"
+                    android:paddingHorizontal="10dp"
+                    app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                    app:spanCount="3"
+                    tools:listitem="@layout/profile_item_pet" />
             </LinearLayout>
-
-            <ProgressBar
-                android:id="@+id/profileProgressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="12dp" />
-
-            <TextView
-                android:id="@+id/tvProfileMessage"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:padding="24dp"
-                android:textColor="@color/light_gray"
-                android:textSize="14sp"
-                android:visibility="gone" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPetGrid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false"
-                android:paddingHorizontal="10dp"
-                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                app:spanCount="3"
-                tools:listitem="@layout/profile_item_pet" />
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+        </androidx.core.widget.NestedScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </RelativeLayout>

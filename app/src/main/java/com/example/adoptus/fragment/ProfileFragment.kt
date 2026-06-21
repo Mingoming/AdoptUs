@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import coil.load
 import com.example.adoptus.R
 import com.example.adoptus.ui.profile.ProfilePostAdapter
@@ -42,6 +43,7 @@ class ProfileFragment : Fragment() {
     private lateinit var message: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var avatar: ShapeableImageView
+    private lateinit var swipeRefresh: SwipeRefreshLayout
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -61,6 +63,14 @@ class ProfileFragment : Fragment() {
         message = view.findViewById(R.id.tvProfileMessage)
         progressBar = view.findViewById(R.id.profileProgressBar)
         avatar = view.findViewById(R.id.ivAvatar)
+        swipeRefresh = view.findViewById(R.id.swipeRefresh)
+
+        swipeRefresh.setColorSchemeColors(
+            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.primary_orange)
+        )
+        swipeRefresh.setOnRefreshListener {
+            viewModel.refreshProfile()
+        }
 
         view.findViewById<ImageButton>(R.id.btnSetting).setOnClickListener {
             findNavController().navigate(R.id.action_profile_to_setting)
@@ -82,7 +92,8 @@ class ProfileFragment : Fragment() {
     }
 
     private fun render(state: ProfileUiState) {
-        progressBar.visibility = if (state.isLoading) View.VISIBLE else View.GONE
+        swipeRefresh.isRefreshing = state.isLoading && swipeRefresh.isRefreshing
+        progressBar.visibility = if (state.isLoading && !swipeRefresh.isRefreshing) View.VISIBLE else View.GONE
 
         state.user?.let { user ->
             topAccountName.text = user.username

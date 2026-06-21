@@ -14,6 +14,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.adoptus.R
 import com.example.adoptus.data.model.Post
 import com.example.adoptus.ui.feed.FeedAdapter
@@ -25,6 +26,7 @@ class FeedFragment : Fragment() {
     private val viewModel: FeedViewModel by viewModels()
     private lateinit var adapter: FeedAdapter
     private lateinit var rvFeed: RecyclerView
+    private lateinit var swipeRefresh: SwipeRefreshLayout
     private lateinit var progressBar: ProgressBar
     private lateinit var layoutEmpty: LinearLayout
     private lateinit var layoutError: LinearLayout
@@ -42,6 +44,7 @@ class FeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         rvFeed       = view.findViewById(R.id.rvFeed)
+        swipeRefresh = view.findViewById(R.id.swipeRefresh)
         progressBar  = view.findViewById(R.id.progressBar)
         layoutEmpty  = view.findViewById(R.id.layoutEmpty)
         layoutError  = view.findViewById(R.id.layoutError)
@@ -50,6 +53,14 @@ class FeedFragment : Fragment() {
 
         setupRecyclerView()
         observeFeed()
+
+        // Configure SwipeRefreshLayout spinner color matching theme orange
+        swipeRefresh.setColorSchemeColors(
+            androidx.core.content.ContextCompat.getColor(requireContext(), R.color.primary_orange)
+        )
+        swipeRefresh.setOnRefreshListener {
+            viewModel.refresh()
+        }
 
         btnRetry.setOnClickListener { viewModel.refresh() }
     }
@@ -74,12 +85,17 @@ class FeedFragment : Fragment() {
             viewModel.feedState.collect { state ->
                 when (state) {
                     is FeedViewModel.FeedState.Loading -> {
-                        progressBar.visibility  = View.VISIBLE
+                        if (!swipeRefresh.isRefreshing) {
+                            progressBar.visibility  = View.VISIBLE
+                        }
                         layoutEmpty.visibility  = View.GONE
                         layoutError.visibility  = View.GONE
-                        rvFeed.visibility       = View.GONE
+                        if (!swipeRefresh.isRefreshing) {
+                            rvFeed.visibility       = View.GONE
+                        }
                     }
                     is FeedViewModel.FeedState.Success -> {
+                        swipeRefresh.isRefreshing = false
                         progressBar.visibility  = View.GONE
                         layoutEmpty.visibility  = View.GONE
                         layoutError.visibility  = View.GONE
@@ -87,12 +103,14 @@ class FeedFragment : Fragment() {
                         adapter.submitList(state.posts)
                     }
                     is FeedViewModel.FeedState.Empty -> {
+                        swipeRefresh.isRefreshing = false
                         progressBar.visibility  = View.GONE
                         layoutEmpty.visibility  = View.VISIBLE
                         layoutError.visibility  = View.GONE
                         rvFeed.visibility       = View.GONE
                     }
                     is FeedViewModel.FeedState.Error -> {
+                        swipeRefresh.isRefreshing = false
                         progressBar.visibility  = View.GONE
                         layoutEmpty.visibility  = View.GONE
                         layoutError.visibility  = View.VISIBLE
