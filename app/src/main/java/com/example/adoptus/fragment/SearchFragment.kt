@@ -28,17 +28,25 @@ class SearchFragment : Fragment() {
 
     private val db = FirebaseFirestore.getInstance()
 
+    private val PREFS_NAME = "adoptus_search_prefs"
+    private val KEY_HISTORY = "search_history"
+
     private lateinit var exploreAdapter: SearchPostAdapter
     private lateinit var resultsPostsAdapter: SearchPostAdapter
     private lateinit var resultsAccountsAdapter: SearchUserAdapter
+    private lateinit var historyAdapter: com.example.adoptus.ui.search.SearchHistoryAdapter
 
     private lateinit var rvExploreGrid: RecyclerView
     private lateinit var rvResultsAccounts: RecyclerView
     private lateinit var rvResultsPosts: RecyclerView
+    private lateinit var rvSearchHistory: RecyclerView
     private lateinit var tabLayoutFilter: TabLayout
     private lateinit var scrollResults: View
+    private lateinit var layoutHistorySection: View
     private lateinit var layoutAccountsSection: View
     private lateinit var layoutPostsSection: View
+
+    private var searchHistory = mutableListOf<String>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -52,6 +60,10 @@ class SearchFragment : Fragment() {
         rvExploreGrid = view.findViewById(R.id.rvExploreGrid)
         scrollResults = view.findViewById(R.id.scrollResults)
 
+        layoutHistorySection = view.findViewById(R.id.layoutHistorySection)
+        rvSearchHistory = view.findViewById(R.id.rvSearchHistory)
+        val btnClearAllHistory = view.findViewById<View>(R.id.btnClearAllHistory)
+
         layoutAccountsSection = view.findViewById(R.id.layoutAccountsSection)
         layoutPostsSection = view.findViewById(R.id.layoutPostsSection)
         rvResultsAccounts = view.findViewById(R.id.rvResultsAccounts)
@@ -61,7 +73,8 @@ class SearchFragment : Fragment() {
         exploreAdapter = SearchPostAdapter { post -> navigateToDetail(post.postId) }
         resultsPostsAdapter = SearchPostAdapter { post -> navigateToDetail(post.postId) }
         resultsAccountsAdapter = SearchUserAdapter { user ->
-            // Menampilkan info profile user lain (bisa disesuaikan atau show toast)
+            // Simpan pencarian ke history
+            saveQueryToHistory(user.username)
             Toast.makeText(context, "Username: @${user.username}", Toast.LENGTH_SHORT).show()
         }
 
@@ -75,8 +88,50 @@ class SearchFragment : Fragment() {
         rvResultsPosts.layoutManager = GridLayoutManager(context, 3)
         rvResultsPosts.adapter = resultsPostsAdapter
 
+        // Load History data
+        loadSearchHistory()
+        historyAdapter = com.example.adoptus.ui.search.SearchHistoryAdapter(
+            searchHistory,
+            onHistoryClick = { query ->
+                etSearch.setText(query)
+                etSearch.setSelection(query.length)
+                performSearch(query)
+                showSearchResultsView()
+            },
+            onRemoveClick = { query ->
+                removeQueryFromHistory(query)
+            }
+        )
+        rvSearchHistory.layoutManager = LinearLayoutManager(context)
+        rvSearchHistory.adapter = historyAdapter
+
+        btnClearAllHistory.setOnClickListener {
+            clearAllHistory()
+        }
+
         // Load explore posts awal (available posts)
         loadExplorePosts()
+
+        // Focus listener for search view to trigger recent history layout
+        etSearch.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                btnBackSearch.visibility = View.VISIBLE
+                (activity as? MainActivity)?.hideBottomNav()
+
+                if (etSearch.text.toString().trim().isEmpty()) {
+                    showHistoryView()
+                }
+            }
+        }
+
+        etSearch.setOnClickListener {
+            btnBackSearch.visibility = View.VISIBLE
+            (activity as? MainActivity)?.hideBottomNav()
+
+            if (etSearch.text.toString().trim().isEmpty()) {
+                showHistoryView()
+            }
+        }
 
         // DETEKSI KLIK ENTER DI KEYBOARD
         etSearch.setOnEditorActionListener { _, actionId, _ ->
@@ -92,14 +147,14 @@ class SearchFragment : Fragment() {
                     btnBackSearch.visibility = View.VISIBLE
                     (activity as? MainActivity)?.hideBottomNav()
 
+                    // Simpan pencarian ke history
+                    saveQueryToHistory(query)
+
                     // Jalankan query pencarian dinamis
                     performSearch(query)
 
                     // Pindah ke mode hasil pencarian
-                    rvExploreGrid.visibility = View.GONE
-                    tabLayoutFilter.visibility = View.VISIBLE
-                    scrollResults.visibility = View.VISIBLE
-                    tabLayoutFilter.getTabAt(0)?.select()
+                    showSearchResultsView()
                 }
                 return@setOnEditorActionListener true
             }
@@ -110,6 +165,11 @@ class SearchFragment : Fragment() {
         btnBackSearch.setOnClickListener {
             // Bersihkan teks di search bar
             etSearch.text?.clear()
+            etSearch.clearFocus()
+
+            // Sembunyikan keyboard
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
 
             // SEMBUNYIKAN TOMBOL BACK & MUNCULKAN NAVBAR UTAMA KEMBALI
             btnBackSearch.visibility = View.GONE
@@ -118,6 +178,7 @@ class SearchFragment : Fragment() {
             // Kembalikan visual ke grid explore awal
             tabLayoutFilter.visibility = View.GONE
             scrollResults.visibility = View.GONE
+            layoutHistorySection.visibility = View.GONE
             rvExploreGrid.visibility = View.VISIBLE
         }
 
@@ -144,6 +205,61 @@ class SearchFragment : Fragment() {
         })
 
         return view
+    }
+
+    private fun showHistoryView() {
+        rvExploreGrid.visibility = View.GONE
+        tabLayoutFilter.visibility = View.GONE
+        scrollResults.visibility = View.GONE
+        layoutHistorySection.visibility = if (searchHistory.isNotEmpty()) View.VISIBLE else View.GONE
+    }
+
+    private fun showSearchResultsView() {
+        rvExploreGrid.visibility = View.GONE
+        layoutHistorySection.visibility = View.GONE
+        tabLayoutFilter.visibility = View.VISIBLE
+        scrollResults.visibility = View.VISIBLE
+        tabLayoutFilter.getTabAt(0)?.select()
+    }
+
+    private fun loadSearchHistory() {
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val historySet = prefs.getStringSet(KEY_HISTORY, emptySet()) ?: emptySet()
+        searchHistory = historySet.toMutableList()
+    }
+
+    private fun saveQueryToHistory(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return
+
+        searchHistory.remove(trimmed)
+        searchHistory.add(0, trimmed)
+        if (searchHistory.size > 15) {
+            searchHistory.removeAt(searchHistory.size - 1)
+        }
+
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putStringSet(KEY_HISTORY, searchHistory.toSet()).apply()
+        historyAdapter.updateList(searchHistory)
+    }
+
+    private fun removeQueryFromHistory(query: String) {
+        searchHistory.remove(query)
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putStringSet(KEY_HISTORY, searchHistory.toSet()).apply()
+        historyAdapter.updateList(searchHistory)
+
+        if (searchHistory.isEmpty()) {
+            layoutHistorySection.visibility = View.GONE
+        }
+    }
+
+    private fun clearAllHistory() {
+        searchHistory.clear()
+        val prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().remove(KEY_HISTORY).apply()
+        historyAdapter.updateList(searchHistory)
+        layoutHistorySection.visibility = View.GONE
     }
 
     private fun loadExplorePosts() {

@@ -97,6 +97,43 @@
             android:padding="2dp"
             android:visibility="visible" />
 
+        <LinearLayout
+            android:id="@+id/layoutHistorySection"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recent"
+                    android:textStyle="bold"
+                    android:textColor="@color/gray_hint"
+                    android:textSize="15sp"
+                    android:layout_alignParentStart="true" />
+                <TextView
+                    android:id="@+id/btnClearAllHistory"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Clear all"
+                    android:textColor="@color/primary_orange"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_alignParentEnd="true" />
+            </RelativeLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSearchHistory"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
         <androidx.core.widget.NestedScrollView
             android:id="@+id/scrollResults"
             android:layout_width="match_parent"
