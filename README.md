@@ -19,6 +19,7 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * `FeedViewModel` memakai `StateFlow`; `PostRepository` memakai `callbackFlow` untuk update real-time.
 * `FeedAdapter` mendukung media image via Coil dan video via Media3 ExoPlayer.
 * `AddPostFragment` menyimpan data teks hewan ke Firestore.
+* Add Post dapat memilih satu foto dari galeri dan mengunggahnya ke Supabase Storage.
 * `SettingFragment` memuat dan menyimpan data profil user ke Firestore.
 * Register baru menyimpan profil user dengan field camelCase yang konsisten.
 * Setting tetap dapat membaca field lama seperti `full_name`, `photo_url`, dan `created_at`.
@@ -29,8 +30,7 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 
 ### Belum Selesai
 
-* Upload foto/video ke Firebase Storage belum aktif.
-* `mediaUrl` masih kosong saat Add Post.
+* Upload video belum tersedia.
 * Kota di Add Post masih hardcode `"Indonesia"`.
 * `SearchFragment` masih template/placeholder.
 * Tombol like belum menyimpan state ke Firestore.
@@ -54,7 +54,7 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 | Navigasi | Jetpack Navigation Component 2.7.7 |
 | Auth | Firebase Authentication |
 | Database | Cloud Firestore |
-| Media Upload | Pending Firebase Storage |
+| Media Upload | Supabase Storage REST API |
 | Image Loading | Coil 2.6.0 |
 | Video Player | Media3 ExoPlayer 1.3.1 |
 | Async | Kotlin Coroutines, Flow, StateFlow |
@@ -72,6 +72,7 @@ app/src/main/
 |   |   |   `-- Post.kt
 |   |   `-- repository/
 |   |       |-- AuthRepository.kt
+|   |       |-- PostImageRepository.kt
 |   |       `-- PostRepository.kt
 |   |-- fragment/
 |   |   |-- FeedFragment.kt
@@ -147,8 +148,8 @@ Repository ini tidak menyimpan atau mendeploy file rules secara otomatis.
 | ageUnit | String | `Months` atau `Years` |
 | city | String | Kota lokasi hewan |
 | description | String | Deskripsi |
-| mediaUrl | String | Kosong sampai Storage aktif |
-| mediaType | String | `image` atau `video` |
+| mediaUrl | String | Public URL Supabase atau kosong jika post tanpa foto |
+| mediaType | String | Saat ini selalu `image` |
 | isVaccinated | Boolean | Status vaksin |
 | hasHealthPassport | Boolean | Status buku kesehatan |
 | adoptionFee | Number | `0` berarti gratis |
@@ -187,6 +188,41 @@ Bottom navigation disembunyikan saat masuk ke `AddPostFragment` dan `PetDetailFr
 * File `app/google-services.json` untuk Firebase project.
 * Firebase Authentication aktif untuk email/password dan Google.
 * Cloud Firestore aktif.
+* Bucket Supabase public bernama `adoptus-post-images`.
+* `SUPABASE_URL` dan `SUPABASE_PUBLISHABLE_KEY` tersedia di `local.properties`.
+
+Contoh konfigurasi lokal:
+
+```properties
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key_here
+```
+
+Gunakan publishable key, bukan secret key atau `service_role`. Nilai aktual tidak boleh di-commit.
+
+Policy upload Supabase Storage yang diperlukan:
+
+```sql
+create policy "Allow post image uploads"
+on storage.objects
+for insert
+to anon
+with check (
+  bucket_id = 'adoptus-post-images'
+  and (storage.foldername(name))[1] = 'posts'
+  and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp')
+);
+```
+
+Atur bucket agar hanya menerima `image/jpeg`, `image/png`, dan `image/webp` dengan ukuran maksimum 5 MB. Aplikasi juga melakukan validasi yang sama sebelum upload.
+
+Cleanup file setelah kegagalan Firestore dilakukan secara best-effort. Tanpa policy `delete` untuk role `anon`, Supabase akan menolak cleanup tersebut; aplikasi tetap melaporkan kegagalan post tanpa menyimpan dokumen Firestore.
+
+Foto disimpan dengan path:
+
+```text
+posts/{firebaseUid}/{timestamp}.{jpg|png|webp}
+```
 
 ### Jalankan dari Android Studio
 
