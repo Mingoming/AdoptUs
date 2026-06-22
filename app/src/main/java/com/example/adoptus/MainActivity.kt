@@ -1,5 +1,6 @@
 package com.example.adoptus
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -82,6 +83,34 @@ class MainActivity : AppCompatActivity() {
                     useDarkIcons = true
                 )
             }
+        }
+
+        handleDeepLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        val uri = intent?.data ?: return
+        val postId = when {
+            uri.scheme == "adoptus" && uri.host == "pet" -> {
+                uri.lastPathSegment
+            }
+            uri.scheme == "https" && (uri.host == "adoptus.com" || uri.host == "www.adoptus.com") && uri.pathSegments.getOrNull(0) == "pet" -> {
+                uri.lastPathSegment
+            }
+            else -> null
+        }
+
+        if (!postId.isNullOrEmpty()) {
+            val bundle = Bundle().apply {
+                putString("postId", postId)
+            }
+            navController.navigate(R.id.petDetailFragment, bundle)
         }
     }
 

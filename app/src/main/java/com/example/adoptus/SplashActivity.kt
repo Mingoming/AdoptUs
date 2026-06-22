@@ -10,9 +10,11 @@ import android.view.animation.OvershootInterpolator
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import com.example.adoptus.databinding.ActivitySplashBinding
 import com.example.adoptus.ui.auth.AuthViewModel
 import com.example.adoptus.ui.auth.LoginActivity
+import kotlinx.coroutines.launch
 
 class SplashActivity : AppCompatActivity() {
 
@@ -23,6 +25,21 @@ class SplashActivity : AppCompatActivity() {
         // Install native splash screen untuk cold start
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Fetch and cache user profile if logged in
+        if (authViewModel.isLoggedIn()) {
+            lifecycleScope.launch {
+                val repo = com.example.adoptus.data.repository.AuthRepository()
+                repo.getCurrentUserProfile().fold(
+                    onSuccess = { user ->
+                        repo.cacheUserProfile(this@SplashActivity, user)
+                    },
+                    onFailure = {
+                        // ignore
+                    }
+                )
+            }
+        }
 
         binding = ActivitySplashBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -100,7 +117,9 @@ class SplashActivity : AppCompatActivity() {
 
     private fun navigateToNextScreen() {
         val intent = if (authViewModel.isLoggedIn()) {
-            Intent(this, MainActivity::class.java)
+            Intent(this, MainActivity::class.java).apply {
+                data = this@SplashActivity.intent.data
+            }
         } else {
             Intent(this, LoginActivity::class.java)
         }
