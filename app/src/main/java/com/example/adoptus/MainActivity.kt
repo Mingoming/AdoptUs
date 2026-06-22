@@ -69,7 +69,8 @@ class MainActivity : AppCompatActivity() {
             when (destination.id) {
                 R.id.addPostFragment,
                 R.id.petDetailFragment,
-                R.id.inboxFragment -> hideBottomNav()
+                R.id.inboxFragment,
+                R.id.adoptionHistoryFragment -> hideBottomNav()
                 else -> showBottomNav()
             }
 

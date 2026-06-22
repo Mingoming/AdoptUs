@@ -292,6 +292,23 @@ class PostRepository {
         awaitClose { listener.remove() }
     }
 
+    // Ambil riwayat pengajuan adopsi milik user yang sedang menjadi adopter
+    fun getMyAdoptions(adopterId: String): Flow<Result<List<Adoption>>> = callbackFlow {
+        val listener = adoptionsCollection
+            .whereEqualTo("adopterId", adopterId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(Result.failure(error))
+                    return@addSnapshotListener
+                }
+                val adoptions = snapshot?.documents?.mapNotNull { doc ->
+                    doc.data?.let { Adoption.fromMap(doc.id, it) }
+                }?.sortedByDescending { it.createdAt } ?: emptyList()
+                trySend(Result.success(adoptions))
+            }
+        awaitClose { listener.remove() }
+    }
+
     // Update status pengajuan adopsi (Approve/Reject)
     suspend fun updateAdoptionStatus(adoptionId: String, postId: String, newStatus: String): Result<Unit> {
         return try {

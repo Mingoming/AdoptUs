@@ -5,6 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     app:cardBackgroundColor="#FFFFFF"
     app:cardCornerRadius="16dp"
     app:cardElevation="2dp"
@@ -26,7 +29,8 @@
                 android:layout_height="wrap_content"
                 android:layout_alignParentStart="true"
                 android:layout_toStartOf="@id/tvStatus"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingEnd="12dp">
 
                 <TextView
                     android:id="@+id/tvPetName"
@@ -38,13 +42,13 @@
                     tools:text="Luna" />
 
                 <TextView
-                    android:id="@+id/tvAdopterName"
+                    android:id="@+id/tvSubmittedAt"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textColor="#888888"
-                    android:textSize="13sp"
-                    tools:text="Pelamar: John Doe" />
+                    android:textSize="12sp"
+                    tools:text="22 Jun 2026, 19:30" />
             </LinearLayout>
 
             <TextView
@@ -62,40 +66,13 @@
                 tools:text="PENDING" />
         </RelativeLayout>
 
-        <!-- Aksi Approve / Reject -->
-        <LinearLayout
-            android:id="@+id/layoutActions"
+        <TextView
+            android:id="@+id/tvStatusMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal"
-            android:weightSum="2">
-
-            <TextView
-                android:id="@+id/btnReject"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_btn_logout"
-                android:gravity="center"
-                android:text="Reject"
-                android:textColor="#c6131b"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/btnApprove"
-                android:layout_width="0dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_btn_whatsapp"
-                android:gravity="center"
-                android:text="Approve"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+            android:layout_marginTop="14dp"
+            android:textColor="#555555"
+            android:textSize="13sp"
+            tools:text="Menunggu keputusan pemilik hewan" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

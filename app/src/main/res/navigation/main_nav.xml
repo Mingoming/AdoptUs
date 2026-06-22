@@ -74,6 +74,13 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profile_to_adoption_history"
+            app:destination="@id/adoptionHistoryFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
         <argument
             android:name="userId"
             app:argType="string"
@@ -101,6 +108,19 @@
         android:label="Inbox">
         <action
             android:id="@+id/action_inbox_to_detail"
+            app:destination="@id/petDetailFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/adoptionHistoryFragment"
+        android:name="com.example.adoptus.fragment.AdoptionHistoryFragment"
+        android:label="Adoption History">
+        <action
+            android:id="@+id/action_adoption_history_to_detail"
             app:destination="@id/petDetailFragment"
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left"

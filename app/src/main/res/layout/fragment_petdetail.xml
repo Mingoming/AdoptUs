@@ -12,7 +12,7 @@
         android:id="@+id/detailTopBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@color/white"
+        android:background="@color/primary_orange"
         android:elevation="2dp"
         android:paddingHorizontal="16dp">
 
@@ -28,7 +28,7 @@
             android:padding="12dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_back"
-            app:tint="@color/gray_hint" />
+            app:tint="@color/white" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -36,7 +36,7 @@
             android:layout_centerVertical="true"
             android:layout_toEndOf="@id/btnBack"
             android:text="Pet Detail"
-            android:textColor="@color/gray_hint"
+            android:textColor="@color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
     </RelativeLayout>
