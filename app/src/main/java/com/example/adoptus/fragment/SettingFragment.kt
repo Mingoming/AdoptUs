@@ -192,6 +192,21 @@ class SettingFragment : Fragment() {
                         .update(updates)
                         .await()
 
+                    // Update cache local
+                    val repo = com.example.adoptus.data.repository.AuthRepository()
+                    val currentUser = repo.getCachedUserProfile(requireContext())
+                    val updatedUser = User(
+                        id = uid,
+                        username = username,
+                        fullName = fullName,
+                        bio = bio,
+                        city = city,
+                        whatsapp = whatsapp,
+                        photoUrl = uploadedPhotoUrl ?: currentUser?.photoUrl ?: "",
+                        role = currentUser?.role ?: "user"
+                    )
+                    repo.cacheUserProfile(requireContext(), updatedUser)
+
                     // Update password kalau diisi
                     if (newPass.isNotEmpty()) {
                         auth.currentUser?.updatePassword(newPass)?.await()
@@ -219,11 +234,20 @@ class SettingFragment : Fragment() {
 
         // Logout
         btnLogout.setOnClickListener {
-            auth.signOut()
-            val intent = Intent(requireContext(), LoginActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            startActivity(intent)
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Logout")
+                .setMessage("Are you sure you want to log out?")
+                .setPositiveButton("Yes") { _, _ ->
+                    val repo = com.example.adoptus.data.repository.AuthRepository()
+                    repo.clearUserCache(requireContext())
+                    auth.signOut()
+                    val intent = Intent(requireContext(), LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
     }
 

@@ -229,9 +229,17 @@ class AddPostFragment : Fragment() {
                 val uid = auth.currentUser?.uid
                     ?: throw IllegalStateException("Not logged in")
 
-                // Mengambil data kota dinamis dari profil user di Firestore
-                val userDoc = db.collection("users").document(uid).get().await()
-                val userCity = userDoc.getString("city")?.trim().orEmpty().ifBlank { "Indonesia" }
+                // Cek cache lokal SharedPreferences terlebih dahulu
+                val authRepo = com.example.adoptus.data.repository.AuthRepository()
+                val cachedUser = authRepo.getCachedUserProfile(requireContext())
+
+                val userCity = if (cachedUser != null && cachedUser.id == uid && cachedUser.city.isNotBlank()) {
+                    cachedUser.city
+                } else {
+                    // Fallback ke Firestore jika cache kosong
+                    val userDoc = db.collection("users").document(uid).get().await()
+                    userDoc.getString("city")?.trim().orEmpty().ifBlank { "Indonesia" }
+                }
 
                 uploadedMedia = selectedMediaUri?.let { mediaUri ->
                     mediaRepository.uploadMedia(
@@ -247,7 +255,7 @@ class AddPostFragment : Fragment() {
                     mediaType = uploadedMedia?.mediaType ?: "image"
                 )
 
-                postRepository.createPost(postWithMedia).getOrElse { postError ->
+                postRepository.createPost(postWithMedia, cachedUser).getOrElse { postError ->
                     uploadedMedia?.let { uploaded ->
                         mediaRepository.deleteMedia(uploaded.path)
                             .exceptionOrNull()

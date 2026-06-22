@@ -114,5 +114,43 @@ class AuthRepository {
         }
     }
 
+    // Cache user profile locally
+    fun cacheUserProfile(context: android.content.Context, user: User) {
+        val prefs = context.getSharedPreferences("adoptus_user_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().apply {
+            putString("id", user.id)
+            putString("username", user.username)
+            putString("fullName", user.fullName)
+            putString("photoUrl", user.photoUrl)
+            putString("bio", user.bio)
+            putString("city", user.city)
+            putString("whatsapp", user.whatsapp)
+            putString("role", user.role)
+            apply()
+        }
+    }
+
+    // Get cached user profile
+    fun getCachedUserProfile(context: android.content.Context): User? {
+        val prefs = context.getSharedPreferences("adoptus_user_prefs", android.content.Context.MODE_PRIVATE)
+        val id = prefs.getString("id", null) ?: return null
+        return User(
+            id = id,
+            username = prefs.getString("username", "") ?: "",
+            fullName = prefs.getString("fullName", "") ?: "",
+            photoUrl = prefs.getString("photoUrl", "") ?: "",
+            bio = prefs.getString("bio", "") ?: "",
+            city = prefs.getString("city", "") ?: "",
+            whatsapp = prefs.getString("whatsapp", "") ?: "",
+            role = prefs.getString("role", "user") ?: "user"
+        )
+    }
+
+    // Clear user cache
+    fun clearUserCache(context: android.content.Context) {
+        val prefs = context.getSharedPreferences("adoptus_user_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
+    }
+
     fun logout() = auth.signOut()
 }
