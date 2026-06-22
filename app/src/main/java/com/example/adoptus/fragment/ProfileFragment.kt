@@ -82,6 +82,10 @@ class ProfileFragment : Fragment() {
             findNavController().navigate(R.id.action_profile_to_inbox)
         }
 
+        view.findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
+            findNavController().navigateUp()
+        }
+
         view.findViewById<RecyclerView>(R.id.rvPetGrid).apply {
             layoutManager = GridLayoutManager(requireContext(), 3)
             adapter = postAdapter
@@ -101,6 +105,7 @@ class ProfileFragment : Fragment() {
         val isOwnProfile = userId == null || userId == currentUid
         view?.findViewById<ImageButton>(R.id.btnSetting)?.visibility = if (isOwnProfile) View.VISIBLE else View.GONE
         view?.findViewById<ImageButton>(R.id.btnInbox)?.visibility = if (isOwnProfile) View.VISIBLE else View.GONE
+        view?.findViewById<ImageButton>(R.id.btnBack)?.visibility = if (isOwnProfile) View.GONE else View.VISIBLE
     }
 
     private fun render(state: ProfileUiState) {
