@@ -25,6 +25,12 @@ class FeedAdapter(
     private val onLikeClick: (Post) -> Unit
 ) : ListAdapter<Post, FeedAdapter.FeedViewHolder>(DiffCallback) {
 
+    private val activeViewHolders = mutableSetOf<FeedViewHolder>()
+
+    fun pauseAllPlayers() {
+        activeViewHolders.forEach { it.pausePlayer() }
+    }
+
     inner class FeedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val media: ImageView = itemView.findViewById(R.id.ivMedia)
         private val videoIndicator: ImageView = itemView.findViewById(R.id.imgVideoIndicator)
@@ -182,6 +188,10 @@ class FeedAdapter(
             likeButton.setOnClickListener { onLikeClick(post) }
         }
 
+        fun playPlayer() {
+            exoPlayer?.play()
+        }
+
         fun pausePlayer() {
             exoPlayer?.pause()
         }
@@ -204,13 +214,21 @@ class FeedAdapter(
         holder.bind(getItem(position))
     }
 
+    override fun onViewAttachedToWindow(holder: FeedViewHolder) {
+        super.onViewAttachedToWindow(holder)
+        activeViewHolders.add(holder)
+        holder.playPlayer()
+    }
+
     override fun onViewRecycled(holder: FeedViewHolder) {
         super.onViewRecycled(holder)
+        activeViewHolders.remove(holder)
         holder.releasePlayer()
     }
 
     override fun onViewDetachedFromWindow(holder: FeedViewHolder) {
         super.onViewDetachedFromWindow(holder)
+        activeViewHolders.remove(holder)
         holder.pausePlayer()
     }
 

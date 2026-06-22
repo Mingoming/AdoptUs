@@ -30,6 +30,39 @@ class MainActivity : AppCompatActivity() {
         // Hubungkan BottomNav ke NavController — otomatis handle semua navigasi tab
         binding.bottomNavigation.setupWithNavController(navController)
 
+        // Cegah macet ketika beralih tab dari profil orang lain
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            val builder = androidx.navigation.NavOptions.Builder()
+                .setLaunchSingleTop(true)
+                .setRestoreState(true)
+                .setPopUpTo(
+                    navController.graph.startDestinationId,
+                    inclusive = false,
+                    saveState = true
+                )
+
+            when (item.itemId) {
+                R.id.feedFragment -> {
+                    navController.navigate(R.id.feedFragment, null, builder.build())
+                    true
+                }
+                R.id.searchFragment -> {
+                    navController.navigate(R.id.searchFragment, null, builder.build())
+                    true
+                }
+                R.id.addPostFragment -> {
+                    navController.navigate(R.id.addPostFragment, null, builder.build())
+                    true
+                }
+                R.id.profileFragment -> {
+                    // Paksa reset argument userId ke null agar kembali memuat profil kita sendiri
+                    navController.navigate(R.id.profileFragment, null, builder.build())
+                    true
+                }
+                else -> false
+            }
+        }
+
         // Sembunyikan BottomNav saat masuk ke halaman yang tidak butuh tab bar
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {

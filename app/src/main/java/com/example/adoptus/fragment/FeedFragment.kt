@@ -71,6 +71,20 @@ class FeedFragment : Fragment() {
         btnRetry.setOnClickListener { viewModel.refresh() }
     }
 
+    override fun onPause() {
+        if (::adapter.isInitialized) {
+            adapter.pauseAllPlayers()
+        }
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::adapter.isInitialized) {
+            adapter.notifyDataSetChanged()
+        }
+    }
+
     private fun setupRecyclerView() {
         adapter = FeedAdapter(
             onDetailClick = { post -> navigateToDetail(post) },
