@@ -3,10 +3,21 @@
 Semua perubahan penting pada proyek Android **AdoptUs** didokumentasikan di file ini.
 Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.0.0] - 2026-06-23
 
 ### Added
+* Mengaktifkan Firestore Offline Persistence secara global melalui `AdoptUsApplication` terdaftar di Manifest untuk kestabilan offline.
+* Mengimplementasikan local profile caching menggunakan SharedPreferences pada `AuthRepository` untuk performa tinggi dan mereduksi query reads Firestore profil pada `AddPostFragment` & `PostRepository.createPost()`.
+* Mengimplementasikan pemuatan data terpaginasi (pagination) menggunakan `.limit()` dan `.startAfter()` pada feed utama (`FeedFragment`) dan explore grid (`SearchFragment`) dengan scroll listener dinamis.
+* Menambahkan filter intent Deep Link pada `SplashActivity` dan logic routing di `MainActivity` untuk mengarahkan tautan `adoptus://pet/{postId}` langsung ke `PetDetailFragment`.
+* Menambahkan dialog konfirmasi logout di `SettingFragment` dan penghapusan data cache lokal secara bersih.
+* Mendeklarasikan izin galeri `READ_EXTERNAL_STORAGE` untuk kompatibilitas OS Android 12 ke bawah.
+* Membuat berkas aturan keamanan resmi database `firestore.rules` dan row-level security Supabase Storage `doc/supabase_rls.sql` di repositori Git.
+* Mengimplementasikan pemutaran dan jeda otomatis video feed ala TikTok pada `FeedFragment` & `FeedAdapter` berdasarkan snap tengah (`SCROLL_STATE_IDLE`) dan mematikan audio seketika saat navigasi keluar halaman (`onPause` / `onViewDetachedFromWindow`).
 
+## [0.8.0] - 2026-06-22
+
+### Added
 * Mengimplementasikan alur adopsi hewan lengkap: pengajuan request adopsi dari Feed (Apply button) dengan dialog konfirmasi, inbox permohonan masuk (`InboxFragment`), adaptasi list pengajuan (`InboxAdapter`), dan alur persetujuan (`Approve` / `Reject`) secara atomik.
 * Menambahkan persistensi status Like postingan ke Firestore menggunakan subkoleksi post likes (`posts/{postId}/likes`) dan user likedPosts (`users/{userId}/likedPosts`).
 * Mengoptimalkan tampilan Like secara responsif menggunakan *optimistic UI update* di `FeedViewModel` dengan pewarnaan tombol like (`primary_orange` tint) dan sinkronisasi data likes dari cache lokal.

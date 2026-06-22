@@ -34,6 +34,12 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * Safe layout pada `AddPostFragment` dengan bar atas transparan dan padding bawah agar nyaman digunakan dengan sistem navigasi tombol/gestur Android.
 * Tombol like yang tersinkronisasi dan tersimpan statusnya secara persisten ke Firestore (`posts/{postId}/likes`).
 * Alur adopsi lengkap (Apply dari Feed, halaman Inbox di Profile, Approve / Reject permohonan secara atomik menggunakan transaksi batch).
+* Mengaktifkan Firestore Offline Persistence secara global untuk mendukung pemuatan data cache saat offline.
+* Caching data profil lokal di SharedPreferences untuk mengurangi query reads Firestore.
+* Pemuatan feed terpaginasi (pagination) pada feed utama dan explore grid pencarian dengan scroll listener dinamis.
+* Sistem pemutaran video ala TikTok dengan scroll snapping (PagerSnapHelper) dan auto-pause/mute audio saat meninggalkan halaman feed.
+* Navigasi Deep Link (`adoptus://pet/{postId}`) terintegrasi untuk pendaratan langsung di Pet Detail.
+* Integrasi berkas aturan keamanan resmi (`firestore.rules` & `supabase_rls.sql`) di repositori git.
 
 ### Belum Selesai
 
