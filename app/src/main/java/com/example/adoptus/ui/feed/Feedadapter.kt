@@ -26,9 +26,53 @@ class FeedAdapter(
 ) : ListAdapter<Post, FeedAdapter.FeedViewHolder>(DiffCallback) {
 
     private val activeViewHolders = mutableSetOf<FeedViewHolder>()
+    private var lastPlayedPosition = RecyclerView.NO_POSITION
 
     fun pauseAllPlayers() {
         activeViewHolders.forEach { it.pausePlayer() }
+    }
+
+    fun playItemAtPosition(recyclerView: RecyclerView?, position: Int) {
+        if (recyclerView == null || position == RecyclerView.NO_POSITION) return
+
+        // Release ONLY the previously-played item (kalo masih di layout)
+        if (lastPlayedPosition != RecyclerView.NO_POSITION && lastPlayedPosition != position) {
+            for (i in 0 until recyclerView.childCount) {
+                val child = recyclerView.getChildAt(i)
+                if (recyclerView.getChildAdapterPosition(child) == lastPlayedPosition) {
+                    (recyclerView.getChildViewHolder(child) as? FeedViewHolder)?.releasePlayer()
+                    break
+                }
+            }
+        }
+
+        // Play snapped item from start, mute+pause the rest
+        val postAtPosition = getItem(if (position < itemCount) position else 0)
+        for (i in 0 until recyclerView.childCount) {
+            val child = recyclerView.getChildAt(i)
+            val childPos = recyclerView.getChildAdapterPosition(child)
+            val holder = recyclerView.getChildViewHolder(child) as? FeedViewHolder ?: continue
+            if (childPos == position) {
+                val player = holder.exoPlayer
+                if (player == null && postAtPosition.mediaType == "video") {
+                    // Player direlease sebelumnya — recreate
+                    holder.initPlayer(postAtPosition.mediaUrl)
+                }
+                holder.exoPlayer?.apply {
+                    seekTo(0)
+                    volume = 1f
+                    playWhenReady = true
+                    play()
+                }
+            } else {
+                holder.exoPlayer?.apply {
+                    volume = 0f
+                    pause()
+                }
+            }
+        }
+
+        lastPlayedPosition = position
     }
 
     inner class FeedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -46,7 +90,9 @@ class FeedAdapter(
         private val likeButton: ImageView = itemView.findViewById(R.id.btnLike)
         private val detailButton: ImageView = itemView.findViewById(R.id.btnDetail)
         private val pvVideo: PlayerView = itemView.findViewById(R.id.pvVideo)
-        private var exoPlayer: ExoPlayer? = null
+        @JvmField
+        internal var exoPlayer: ExoPlayer? = null
+        private var lastPost: Post? = null
 
         fun bind(post: Post) {
             petName.text = post.petName
@@ -66,30 +112,7 @@ class FeedAdapter(
             if (post.mediaType == "video") {
                 videoIndicator.visibility = View.GONE
                 pvVideo.visibility = View.VISIBLE
-
-                val player = ExoPlayer.Builder(itemView.context).build().also {
-                    it.repeatMode = Player.REPEAT_MODE_ALL
-                    val mediaItem = MediaItem.fromUri(post.mediaUrl)
-                    it.setMediaItem(mediaItem)
-                    it.prepare()
-                    it.playWhenReady = true // Autoplay
-                }
-                exoPlayer = player
-                pvVideo.player = player
-
-                // Tap video untuk Play / Pause
-                val togglePlay = View.OnClickListener {
-                    val p = exoPlayer ?: return@OnClickListener
-                    if (p.isPlaying) {
-                        p.pause()
-                        videoIndicator.visibility = View.VISIBLE
-                    } else {
-                        p.play()
-                        videoIndicator.visibility = View.GONE
-                    }
-                }
-                pvVideo.setOnClickListener(togglePlay)
-                media.setOnClickListener(togglePlay)
+                initPlayer(post.mediaUrl)
             } else {
                 videoIndicator.visibility = View.GONE
                 media.setOnClickListener(null)
@@ -103,6 +126,7 @@ class FeedAdapter(
                     media.setImageResource(R.drawable.placeholder)
                 }
             }
+            lastPost = post
 
             // Memuat info profil pembuat postingan: gunakan embedded owner info jika tersedia untuk mencegah N+1 query
             val hasOwnerInfo = post.ownerUsername.isNotBlank()
@@ -196,6 +220,33 @@ class FeedAdapter(
             exoPlayer?.pause()
         }
 
+        fun initPlayer(mediaUrl: String) {
+            exoPlayer?.release()
+            val player = ExoPlayer.Builder(itemView.context).build().also {
+                it.repeatMode = Player.REPEAT_MODE_ALL
+                val mediaItem = MediaItem.fromUri(mediaUrl)
+                it.setMediaItem(mediaItem)
+                it.prepare()
+                it.playWhenReady = false
+                it.volume = 0f
+            }
+            exoPlayer = player
+            pvVideo.player = player
+
+            val togglePlay = View.OnClickListener {
+                val p = exoPlayer ?: return@OnClickListener
+                if (p.isPlaying) {
+                    p.pause()
+                    videoIndicator.visibility = View.VISIBLE
+                } else {
+                    p.play()
+                    videoIndicator.visibility = View.GONE
+                }
+            }
+            pvVideo.setOnClickListener(togglePlay)
+            media.setOnClickListener(togglePlay)
+        }
+
         fun releasePlayer() {
             exoPlayer?.release()
             exoPlayer = null
@@ -217,7 +268,6 @@ class FeedAdapter(
     override fun onViewAttachedToWindow(holder: FeedViewHolder) {
         super.onViewAttachedToWindow(holder)
         activeViewHolders.add(holder)
-        holder.playPlayer()
     }
 
     override fun onViewRecycled(holder: FeedViewHolder) {

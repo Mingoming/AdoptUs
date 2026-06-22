@@ -39,6 +39,8 @@ class FeedFragment : Fragment() {
     private lateinit var tvError: TextView
     private lateinit var btnRetry: TextView
 
+    private var isInitialPlayDone = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -101,6 +103,16 @@ class FeedFragment : Fragment() {
         PagerSnapHelper().attachToRecyclerView(rvFeed)
 
         rvFeed.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                super.onScrollStateChanged(recyclerView, newState)
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    // Snap completed — play only the centered item
+                    val centerPos = layoutManager.findFirstCompletelyVisibleItemPosition()
+                    adapter.playItemAtPosition(recyclerView, centerPos)
+                    isInitialPlayDone = true
+                }
+            }
+
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 val totalItemCount = layoutManager.itemCount
@@ -181,6 +193,18 @@ class FeedFragment : Fragment() {
                         layoutError.visibility  = View.GONE
                         rvFeed.visibility       = View.VISIBLE
                         adapter.submitList(state.posts)
+                        
+                        // Pastikan item pertama play setelah data termuat,
+                        // tapi skip kalau user sudah scroll duluan
+                        if (!isInitialPlayDone) {
+                            rvFeed.post {
+                                if (!isInitialPlayDone) {
+                                    val centerPos = (rvFeed.layoutManager as? LinearLayoutManager)
+                                        ?.findFirstCompletelyVisibleItemPosition() ?: RecyclerView.NO_POSITION
+                                    adapter.playItemAtPosition(rvFeed, centerPos)
+                                }
+                            }
+                        }
                     }
                     is FeedViewModel.FeedState.Empty -> {
                         swipeRefresh.isRefreshing = false
