@@ -74,11 +74,14 @@ class InboxFragment : Fragment() {
         rvRequests.adapter = adapter
     }
 
+    private var observeJob: kotlinx.coroutines.Job? = null
+
     private fun observeIncomingAdoptions() {
         val currentUid = auth.currentUser?.uid ?: return
         swipeRefresh.isRefreshing = true
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        observeJob?.cancel()
+        observeJob = viewLifecycleOwner.lifecycleScope.launch {
             repository.getIncomingAdoptions(currentUid).collectLatest { result ->
                 swipeRefresh.isRefreshing = false
                 progressBar.visibility = View.GONE

@@ -85,7 +85,6 @@ data class Post(
         "adoptionFee"       to adoptionFee,
         "status"            to status,
         "likesCount"        to likesCount,
-        "isLikedByCurrentUser" to isLikedByCurrentUser,
         "ownerUsername"     to ownerUsername,
         "ownerPhotoUrl"     to ownerPhotoUrl,
         "ownerWhatsapp"     to ownerWhatsapp,

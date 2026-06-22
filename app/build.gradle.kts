@@ -105,7 +105,6 @@ dependencies {
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
-    implementation(libs.androidx.material3)
     implementation("com.github.yalantis:ucrop:2.2.8")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }
