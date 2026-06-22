@@ -39,6 +39,32 @@ class PostRepository {
         awaitClose { listener.remove() }
     }
 
+    // Ambil post secara terpaginasi (pagination)
+    suspend fun getFeedPostsPaginated(
+        pageSize: Long,
+        lastDocument: com.google.firebase.firestore.DocumentSnapshot?
+    ): Result<Pair<List<Post>, com.google.firebase.firestore.DocumentSnapshot?>> {
+        return try {
+            var query = postsCollection
+                .whereEqualTo("status", "available")
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .limit(pageSize)
+
+            if (lastDocument != null) {
+                query = query.startAfter(lastDocument)
+            }
+
+            val snapshot = query.get().await()
+            val posts = snapshot.documents.mapNotNull { doc ->
+                doc.data?.let { Post.fromMap(doc.id, it) }
+            }
+            val lastVisible = snapshot.documents.lastOrNull()
+            Result.success(Pair(posts, lastVisible))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // Ambil post milik user tertentu
     fun getUserPosts(uid: String): Flow<Result<List<Post>>> = callbackFlow {
         val listener = postsCollection
@@ -123,16 +149,26 @@ class PostRepository {
 
     // ── Upload ───────────────────────────────────────────────────────────────
 
-    suspend fun createPost(post: Post): Result<String> {
+    suspend fun createPost(post: Post, cachedUser: com.example.adoptus.data.model.User? = null): Result<String> {
         return try {
             val uid = auth.currentUser?.uid
                 ?: return Result.failure(Exception("User not logged in"))
 
-            // Fetch owner info from users collection
-            val userDoc = db.collection("users").document(uid).get().await()
-            val ownerUsername = userDoc.getString("username") ?: ""
-            val ownerPhotoUrl = userDoc.getString("photoUrl") ?: userDoc.getString("photo_url") ?: ""
-            val ownerWhatsapp = userDoc.getString("whatsapp") ?: ""
+            val ownerUsername: String
+            val ownerPhotoUrl: String
+            val ownerWhatsapp: String
+
+            if (cachedUser != null && cachedUser.id == uid) {
+                ownerUsername = cachedUser.username
+                ownerPhotoUrl = cachedUser.photoUrl
+                ownerWhatsapp = cachedUser.whatsapp
+            } else {
+                // Fetch owner info from users collection
+                val userDoc = db.collection("users").document(uid).get().await()
+                ownerUsername = userDoc.getString("username") ?: ""
+                ownerPhotoUrl = userDoc.getString("photoUrl") ?: userDoc.getString("photo_url") ?: ""
+                ownerWhatsapp = userDoc.getString("whatsapp") ?: ""
+            }
 
             val docRef = postsCollection.document()
             val postWithId = post.copy(

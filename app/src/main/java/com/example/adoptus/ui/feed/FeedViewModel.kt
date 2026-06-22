@@ -27,6 +27,13 @@ class FeedViewModel : ViewModel() {
     private val _feedState = MutableStateFlow<FeedState>(FeedState.Loading)
     val feedState: StateFlow<FeedState> = _feedState.asStateFlow()
 
+    private val postsList = mutableListOf<Post>()
+    private var lastVisibleDocument: com.google.firebase.firestore.DocumentSnapshot? = null
+    var isLoadingMore = false
+        private set
+    var isLastPage = false
+        private set
+
     init {
         loadFeed()
     }
@@ -35,7 +42,10 @@ class FeedViewModel : ViewModel() {
         val currentUid = FirebaseAuth.getInstance().currentUser?.uid
         viewModelScope.launch {
             _feedState.value = FeedState.Loading
-            
+            isLastPage = false
+            lastVisibleDocument = null
+            postsList.clear()
+
             if (currentUid != null) {
                 repository.getLikedPostIds(currentUid).fold(
                     onSuccess = { ids ->
@@ -48,23 +58,43 @@ class FeedViewModel : ViewModel() {
                 )
             }
 
-            repository.getFeedPosts().collect { result ->
-                result.fold(
-                    onSuccess = { posts ->
-                        val mappedPosts = posts.map { post ->
-                            post.copy(isLikedByCurrentUser = likedPostIds.contains(post.postId))
-                        }
-                        _feedState.value = if (mappedPosts.isEmpty()) FeedState.Empty
-                                           else FeedState.Success(mappedPosts)
-                    },
-                    onFailure = {
-                        _feedState.value = FeedState.Error(
-                            it.message ?: "Gagal memuat feed"
-                        )
-                    }
-                )
-            }
+            loadNextPageInternal(currentUid)
         }
+    }
+
+    fun loadNextPage() {
+        if (isLoadingMore || isLastPage) return
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        viewModelScope.launch {
+            isLoadingMore = true
+            loadNextPageInternal(currentUid)
+            isLoadingMore = false
+        }
+    }
+
+    private suspend fun loadNextPageInternal(currentUid: String?) {
+        repository.getFeedPostsPaginated(10, lastVisibleDocument).fold(
+            onSuccess = { (newPosts, lastDoc) ->
+                lastVisibleDocument = lastDoc
+                if (newPosts.size < 10) {
+                    isLastPage = true
+                }
+                val mapped = newPosts.map { post ->
+                    post.copy(isLikedByCurrentUser = likedPostIds.contains(post.postId))
+                }
+                postsList.addAll(mapped)
+
+                _feedState.value = if (postsList.isEmpty()) FeedState.Empty
+                                   else FeedState.Success(postsList.toList())
+            },
+            onFailure = {
+                if (postsList.isEmpty()) {
+                    _feedState.value = FeedState.Error(
+                        it.message ?: "Gagal memuat feed"
+                    )
+                }
+            }
+        )
     }
 
     fun toggleLike(post: Post) {
@@ -90,6 +120,8 @@ class FeedViewModel : ViewModel() {
                         it
                     }
                 }
+                postsList.clear()
+                postsList.addAll(updatedPosts)
                 _feedState.value = FeedState.Success(updatedPosts)
             }
 
@@ -115,6 +147,8 @@ class FeedViewModel : ViewModel() {
                             it
                         }
                     }
+                    postsList.clear()
+                    postsList.addAll(revertedPosts)
                     _feedState.value = FeedState.Success(revertedPosts)
                 }
             }

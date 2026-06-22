@@ -99,6 +99,17 @@ class FeedFragment : Fragment() {
 
         // PagerSnapHelper = snap satu item per scroll (TikTok behavior)
         PagerSnapHelper().attachToRecyclerView(rvFeed)
+
+        rvFeed.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val totalItemCount = layoutManager.itemCount
+                val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+                if (lastVisibleItem >= totalItemCount - 2) {
+                    viewModel.loadNextPage()
+                }
+            }
+        })
     }
 
     private fun applyAdoption(post: Post) {

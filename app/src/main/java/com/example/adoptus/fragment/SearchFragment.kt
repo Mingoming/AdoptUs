@@ -48,6 +48,11 @@ class SearchFragment : Fragment() {
 
     private var searchHistory = mutableListOf<String>()
 
+    private val explorePostsList = mutableListOf<Post>()
+    private var lastExploreVisible: com.google.firebase.firestore.DocumentSnapshot? = null
+    private var isExploreLoading = false
+    private var isExploreLastPage = false
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -82,8 +87,20 @@ class SearchFragment : Fragment() {
         }
 
         // Setup RecyclerViews
-        rvExploreGrid.layoutManager = GridLayoutManager(context, 3)
+        val exploreLayoutManager = GridLayoutManager(context, 3)
+        rvExploreGrid.layoutManager = exploreLayoutManager
         rvExploreGrid.adapter = exploreAdapter
+
+        rvExploreGrid.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                val totalItemCount = exploreLayoutManager.itemCount
+                val lastVisibleItem = exploreLayoutManager.findLastVisibleItemPosition()
+                if (lastVisibleItem >= totalItemCount - 3) {
+                    loadExplorePosts()
+                }
+            }
+        })
 
         rvResultsAccounts.layoutManager = LinearLayoutManager(context)
         rvResultsAccounts.adapter = resultsAccountsAdapter
@@ -265,17 +282,40 @@ class SearchFragment : Fragment() {
         layoutHistorySection.visibility = View.GONE
     }
 
-    private fun loadExplorePosts() {
-        db.collection("posts")
+    private fun loadExplorePosts(isRefresh: Boolean = false) {
+        if (isExploreLoading || (isExploreLastPage && !isRefresh)) return
+        isExploreLoading = true
+
+        if (isRefresh) {
+            explorePostsList.clear()
+            lastExploreVisible = null
+            isExploreLastPage = false
+        }
+
+        var query = db.collection("posts")
             .whereEqualTo("status", "available")
-            .get()
+            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(15)
+
+        lastExploreVisible?.let {
+            query = query.startAfter(it)
+        }
+
+        query.get()
             .addOnSuccessListener { snapshot ->
+                isExploreLoading = false
                 val posts = snapshot.documents.mapNotNull { doc ->
                     doc.data?.let { Post.fromMap(doc.id, it) }
                 }
-                exploreAdapter.submitList(posts)
+                if (posts.size < 15) {
+                    isExploreLastPage = true
+                }
+                explorePostsList.addAll(posts)
+                exploreAdapter.submitList(explorePostsList.toList())
+                lastExploreVisible = snapshot.documents.lastOrNull()
             }
             .addOnFailureListener { e ->
+                isExploreLoading = false
                 Toast.makeText(context, "Error loading explore: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
