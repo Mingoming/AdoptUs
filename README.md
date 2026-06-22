@@ -226,23 +226,11 @@ SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key_here
 
 Gunakan publishable key, bukan secret key atau `service_role`. Nilai aktual tidak boleh di-commit.
 
-Policy upload Supabase Storage yang diperlukan:
+Kebijakan Row-Level Security (RLS) Supabase Storage yang lengkap dan aman untuk bucket `adoptus-post-images` telah didefinisikan secara resmi di dalam berkas [doc/supabase_rls.sql](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/supabase_rls.sql). 
 
-```sql
-create policy "Allow post media uploads"
-on storage.objects
-for insert
-to anon
-with check (
-  bucket_id = 'adoptus-post-images'
-  and (storage.foldername(name))[1] = 'posts'
-  and lower(storage.extension(name)) in ('jpg', 'jpeg', 'png', 'webp', 'mp4')
-);
-```
+Kebijakan ini mengizinkan akses baca publik, namun membatasi unggah (`INSERT`) dan hapus (`DELETE`) media di bawah folder `posts/{uid}/*` hanya untuk user terautentikasi (`authenticated` role) yang mencocokkan ID pengguna mereka dengan nama folder (`auth.uid()`).
 
-Atur bucket agar hanya menerima `image/jpeg`, `image/png`, `image/webp`, dan `video/mp4` dengan ukuran maksimum 20 MB. Aplikasi membatasi gambar maksimal 5 MB dan video MP4 maksimal 20 MB sebelum upload.
-
-Cleanup file setelah kegagalan Firestore dilakukan secara best-effort. Tanpa policy `delete` untuk role `anon`, Supabase akan menolak cleanup tersebut; aplikasi tetap melaporkan kegagalan post tanpa menyimpan dokumen Firestore.
+Aplikasi membatasi unggahan gambar maksimal 5 MB dan video MP4 maksimal 20 MB sebelum proses upload dilakukan.
 
 Foto disimpan dengan path:
 
@@ -271,11 +259,19 @@ $env:PATH="$env:JAVA_HOME\bin;$env:PATH"
 
 ADR tersedia di `doc/adr/`:
 
-* `0001-architecture-decision.md`: arsitektur awal dan autentikasi.
-* `0002-main-navigation-and-profile-ui.md`: bottom navigation dan profile frontend mode.
-* `0003-navigation-component-migration.md`: migrasi ke Jetpack Navigation Component.
-* `0004-feed-firestore-setting.md`: Firestore feed, post model, AddPost, dan Setting.
-* `0005-current-implementation-baseline.md`: baseline implementasi terbaru dan gap teknis.
+* [ADR 0001](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0001-architecture-decision.md): Arsitektur awal dan autentikasi.
+* [ADR 0002](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0002-main-navigation-and-profile-ui.md): Bottom navigation dan profile frontend mode.
+* [ADR 0003](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0003-navigation-component-migration.md): Migrasi ke Jetpack Navigation Component.
+* [ADR 0004](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0004-feed-firestore-setting.md): Firestore feed, post model, AddPost, dan Setting.
+* [ADR 0005](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0005-current-implementation-baseline.md): Baseline implementasi terbaru dan gap teknis.
+* [ADR 0006](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0006-profile-and-pet-detail-firestore-integration.md): Integrasi Firestore untuk profil dinamis dan detail hewan.
+* [ADR 0007](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0007-profile-cropping-refresh-and-layout-safe-areas.md): Pemotongan foto profil (UCrop), Swipe-to-Refresh, dan Safe Areas.
+* [ADR 0008](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0008-direct-profile-redirection-from-feed.md): Navigasi profil pembuat postingan langsung dari feed.
+* [ADR 0009](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0009-adoption-flow-and-inbox-implementation.md): Alur pengajuan adopsi (Apply/Approve/Reject) dan Inbox masuk.
+* [ADR 0010](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0010-offline-persistence-and-local-caching.md): Persistensi offline Firestore dan Caching profil lokal (SharedPreferences).
+* [ADR 0011](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0011-paged-query-pagination-for-feed-and-explore.md): Pemuatan data terpaginasi (Pagination) feed utama dan explore.
+* [ADR 0012](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0012-deep-link-navigation-routing.md): Navigasi detail hewan berbasis Deep Link.
+* [ADR 0013](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0013-database-and-storage-security-rules.md): Aturan keamanan database Firestore dan Supabase Storage.
 
 ## Lisensi
 
