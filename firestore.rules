@@ -11,6 +11,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
+      // PERBAIKAN: Izinkan semua pengguna yang login membaca profil pengguna lain
       allow read: if signedIn();
       allow create: if isOwner(userId)
         && request.resource.data.id == userId
@@ -20,9 +21,9 @@ service cloud.firestore {
         && request.resource.data.role == resource.data.role;
       allow delete: if false;
 
+      // PERBAIKAN: Izinkan pengguna mengelola subkoleksi postingan yang mereka sukai
       match /likedPosts/{postId} {
-        allow read: if signedIn();
-        allow write: if isOwner(userId);
+        allow read, write: if isOwner(userId);
       }
     }
 
@@ -31,23 +32,44 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid;
       allow update: if signedIn()
-        && (resource.data.userId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']));
-      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+        && (
+          // Kasus 1: Pemilik mengubah detail post miliknya
+          (resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId)
+          ||
+          // Kasus 2: Pengguna lain memperbarui likesCount pada post (saat toggle like)
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount']))
+        );
+      allow delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
 
+      // PERBAIKAN: Izinkan pengguna mencatat/menghapus like mereka pada post
       match /likes/{userId} {
         allow read: if signedIn();
         allow write: if isOwner(userId);
       }
     }
-
+    
     match /adoptions/{adoptionId} {
-      allow read: if signedIn() && (resource.data.ownerId == request.auth.uid || resource.data.adopterId == request.auth.uid);
-      allow create: if signedIn()
+      allow create: if request.auth != null
         && request.resource.data.adopterId == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow update: if signedIn()
-        && (resource.data.ownerId == request.auth.uid || resource.data.adopterId == request.auth.uid);
+        && request.resource.data.ownerId != request.auth.uid
+        && request.resource.data.status == "pending";
+
+      allow read: if request.auth != null
+        && (
+          resource.data.adopterId == request.auth.uid ||
+          resource.data.ownerId == request.auth.uid
+        );
+
+      allow update: if request.auth != null
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.status in ["approved", "rejected"];
+
       allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
