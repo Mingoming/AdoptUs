@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="animal_types">
+        <item>Kucing</item>
+        <item>Anjing</item>
+        <item>Burung</item>
+        <item>Kelinci</item>
+        <item>Hamster</item>
+        <item>Lainnya</item>
+    </string-array>
+</resources>
