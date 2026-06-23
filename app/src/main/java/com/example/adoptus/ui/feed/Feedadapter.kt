@@ -17,6 +17,9 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.example.adoptus.util.formatToWaUrl
 
 class FeedAdapter(
     private val onDetailClick: (Post) -> Unit,
@@ -92,8 +95,6 @@ class FeedAdapter(
         private val pvVideo: PlayerView = itemView.findViewById(R.id.pvVideo)
         @JvmField
         internal var exoPlayer: ExoPlayer? = null
-        private var lastPost: Post? = null
-
         fun bind(post: Post) {
             petName.text = post.petName
             breedAge.text = "${post.breed} | ${post.ageDisplay}"
@@ -102,6 +103,17 @@ class FeedAdapter(
             status.text = post.status.replaceFirstChar { it.uppercase() }
             fee.text = if (post.isFree) "FREE" else "Rp ${post.adoptionFee}"
 
+            bindMedia(post)
+            bindOwnerInfo(post)
+            bindLikeButton(post)
+
+            detailButton.setOnClickListener { onDetailClick(post) }
+            applyButton.setOnClickListener { onApplyClick(post) }
+            ownerAvatar.setOnClickListener { onOwnerClick(post) }
+            likeButton.setOnClickListener { onLikeClick(post) }
+        }
+
+        private fun bindMedia(post: Post) {
             // Bersihkan player lama
             exoPlayer?.release()
             exoPlayer = null
@@ -126,9 +138,9 @@ class FeedAdapter(
                     media.setImageResource(R.drawable.placeholder)
                 }
             }
-            lastPost = post
+        }
 
-            // Memuat info profil pembuat postingan: gunakan embedded owner info jika tersedia untuk mencegah N+1 query
+        private fun bindOwnerInfo(post: Post) {
             val hasOwnerInfo = post.ownerUsername.isNotBlank()
             if (hasOwnerInfo) {
                 if (post.ownerPhotoUrl.isNotBlank()) {
@@ -143,13 +155,7 @@ class FeedAdapter(
 
                 whatsappButton.setOnClickListener {
                     val targetUrl = if (post.ownerWhatsapp.isNotBlank()) {
-                        val cleanedNum = post.ownerWhatsapp.replace(Regex("[^0-9+]"), "")
-                        val formattedNum = when {
-                            cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
-                            cleanedNum.startsWith("+") -> cleanedNum.substring(1)
-                            else -> cleanedNum
-                        }
-                        "https://wa.me/$formattedNum?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                        post.ownerWhatsapp.formatToWaUrl(post.petName)
                     } else {
                         "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
                     }
@@ -157,16 +163,14 @@ class FeedAdapter(
                     itemView.context.startActivity(intent)
                 }
             } else {
-                // Fallback untuk post lama (legacy posts)
-                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                db.collection("users").document(post.userId).get()
-                    .addOnSuccessListener { doc ->
-                        if (doc.exists()) {
-                            val whatsappNum = doc.getString("whatsapp")?.trim().orEmpty()
-                            val photoUrl = doc.getString("photoUrl")?.trim().orEmpty()
-
-                            if (photoUrl.isNotBlank()) {
-                                ownerAvatar.load(photoUrl) {
+                // Fallback untuk post lama (legacy posts) menggunakan AuthRepository
+                val repo = com.example.adoptus.data.repository.AuthRepository()
+                val lifecycleOwner = itemView.context as? androidx.lifecycle.LifecycleOwner
+                lifecycleOwner?.lifecycleScope?.launch {
+                    repo.getUserProfile(post.userId).fold(
+                        onSuccess = { user ->
+                            if (user.photoUrl.isNotBlank()) {
+                                ownerAvatar.load(user.photoUrl) {
                                     crossfade(true)
                                     placeholder(R.drawable.ic_profile_placeholder)
                                     error(R.drawable.ic_profile_placeholder)
@@ -176,40 +180,31 @@ class FeedAdapter(
                             }
 
                             whatsappButton.setOnClickListener {
-                                val targetUrl = if (whatsappNum.isNotBlank()) {
-                                    val cleanedNum = whatsappNum.replace(Regex("[^0-9+]"), "")
-                                    val formattedNum = when {
-                                        cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
-                                        cleanedNum.startsWith("+") -> cleanedNum.substring(1)
-                                        else -> cleanedNum
-                                    }
-                                    "https://wa.me/$formattedNum?text=Halo, saya tertarik mengadopsi ${post.petName}"
+                                val targetUrl = if (user.whatsapp.isNotBlank()) {
+                                    user.whatsapp.formatToWaUrl(post.petName)
                                 } else {
                                     "https://wa.me/?text=Halo, saya tertarik mengadopsi ${post.petName}"
                                 }
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
                                 itemView.context.startActivity(intent)
                             }
-                        } else {
+                        },
+                        onFailure = {
                             ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
+                            whatsappButton.setOnClickListener(null)
                         }
-                    }
-                    .addOnFailureListener {
-                        ownerAvatar.setImageResource(R.drawable.ic_profile_placeholder)
-                    }
+                    )
+                }
             }
+        }
 
+        private fun bindLikeButton(post: Post) {
             // Tint heart icon based on like status
             if (post.isLikedByCurrentUser) {
                 likeButton.setColorFilter(androidx.core.content.ContextCompat.getColor(itemView.context, R.color.primary_orange))
             } else {
                 likeButton.clearColorFilter()
             }
-
-            detailButton.setOnClickListener { onDetailClick(post) }
-            applyButton.setOnClickListener { onApplyClick(post) }
-            ownerAvatar.setOnClickListener { onOwnerClick(post) }
-            likeButton.setOnClickListener { onLikeClick(post) }
         }
 
         fun playPlayer() {
