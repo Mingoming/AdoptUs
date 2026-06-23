@@ -58,12 +58,17 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 | Min SDK | 24 |
 | Target/Compile SDK | 36 |
 | UI | XML Layout + Material Components |
+| View Binding | AndroidX ViewBinding |
 | Navigasi | Jetpack Navigation Component 2.7.7 |
-| Auth | Firebase Authentication |
+| Auth | Firebase Authentication + Google Sign-In (Play Services Auth 21.2.0) |
 | Database | Cloud Firestore |
+| Local Caching | SharedPreferences |
 | Media Upload | Supabase Storage REST API |
 | Image Loading | Coil 2.6.0 |
+| Image Cropping | UCrop 2.2.8 |
 | Video Player | Media3 ExoPlayer 1.3.1 |
+| Splash Screen | AndroidX Core SplashScreen 1.0.1 |
+| Pull-to-Refresh | SwipeRefreshLayout 1.1.0 |
 | Async | Kotlin Coroutines, Flow, StateFlow |
 | Architecture | MVVM sederhana: ViewModel + Repository |
 
