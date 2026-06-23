@@ -6,13 +6,11 @@ import com.example.adoptus.data.model.Post
 import com.example.adoptus.data.model.User
 import com.example.adoptus.data.repository.AuthRepository
 import com.example.adoptus.data.repository.PostRepository
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 data class ProfileUiState(
     val isLoading: Boolean = true,
@@ -22,11 +20,10 @@ data class ProfileUiState(
     val postsError: String? = null
 )
 
-class ProfileViewModel : ViewModel() {
-
-    private val authRepository = AuthRepository()
-    private val postRepository = PostRepository()
-    private val db = FirebaseFirestore.getInstance()
+class ProfileViewModel(
+    private val authRepository: AuthRepository = AuthRepository(),
+    private val postRepository: PostRepository = PostRepository()
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -49,13 +46,7 @@ class ProfileViewModel : ViewModel() {
             val userResult = if (uid == authRepository.getCurrentUser()?.uid) {
                 authRepository.getCurrentUserProfile()
             } else {
-                try {
-                    val doc = db.collection("users").document(uid).get().await()
-                    val user = User.fromMap(doc.id, doc.data.orEmpty())
-                    Result.success(user)
-                } catch (e: Exception) {
-                    Result.failure(e)
-                }
+                authRepository.getUserProfile(uid)
             }
 
             userResult.fold(

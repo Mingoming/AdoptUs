@@ -7,9 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.adoptus.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
-
-    private val repo = AuthRepository()
+class AuthViewModel(
+    private val repo: AuthRepository = AuthRepository()
+) : ViewModel() {
 
     sealed class AuthState {
         object Idle                                : AuthState()

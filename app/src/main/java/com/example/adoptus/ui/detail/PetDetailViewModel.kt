@@ -15,9 +15,9 @@ sealed class PetDetailState {
     data class Error(val message: String) : PetDetailState()
 }
 
-class PetDetailViewModel : ViewModel() {
-
-    private val repository = PostRepository()
+class PetDetailViewModel(
+    private val repository: PostRepository = PostRepository()
+) : ViewModel() {
 
     private val _state = MutableStateFlow<PetDetailState>(PetDetailState.Loading)
     val state: StateFlow<PetDetailState> = _state.asStateFlow()

@@ -9,11 +9,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-import com.google.firebase.auth.FirebaseAuth
+import com.example.adoptus.data.repository.AuthRepository
 
-class FeedViewModel : ViewModel() {
+class FeedViewModel(
+    private val repository: PostRepository = PostRepository(),
+    private val authRepository: AuthRepository = AuthRepository()
+) : ViewModel() {
 
-    private val repository = PostRepository()
     private val likedPostIds = mutableSetOf<String>()
 
     // State untuk list post di feed
@@ -39,7 +41,7 @@ class FeedViewModel : ViewModel() {
     }
 
     fun loadFeed() {
-        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        val currentUid = authRepository.getCurrentUser()?.uid
         viewModelScope.launch {
             _feedState.value = FeedState.Loading
             isLastPage = false
@@ -64,7 +66,7 @@ class FeedViewModel : ViewModel() {
 
     fun loadNextPage() {
         if (isLoadingMore || isLastPage) return
-        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        val currentUid = authRepository.getCurrentUser()?.uid
         viewModelScope.launch {
             isLoadingMore = true
             loadNextPageInternal(currentUid)
@@ -98,7 +100,7 @@ class FeedViewModel : ViewModel() {
     }
 
     fun toggleLike(post: Post) {
-        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val currentUid = authRepository.getCurrentUser()?.uid ?: return
         viewModelScope.launch {
             val wasLiked = likedPostIds.contains(post.postId)
             if (wasLiked) {
