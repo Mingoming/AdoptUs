@@ -152,5 +152,39 @@ class AuthRepository {
         prefs.edit().clear().apply()
     }
 
+    suspend fun getUserProfile(uid: String): Result<User> {
+        return try {
+            val document = db.collection("users").document(uid).get().await()
+            val data = document.data
+                ?: return Result.failure(Exception("User profile not found"))
+            Result.success(User.fromMap(document.id, data))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUserProfile(uid: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            db.collection("users").document(uid)
+                .update(updates)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAllUsers(): Result<List<User>> {
+        return try {
+            val snapshot = db.collection("users").get().await()
+            val users = snapshot.documents.mapNotNull { doc ->
+                doc.data?.let { User.fromMap(doc.id, it) }
+            }
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     fun logout() = auth.signOut()
 }
