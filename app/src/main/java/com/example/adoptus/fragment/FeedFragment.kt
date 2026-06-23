@@ -73,6 +73,13 @@ class FeedFragment : Fragment() {
         btnRetry.setOnClickListener { viewModel.refresh() }
     }
 
+    fun refreshFeed() {
+        if (::rvFeed.isInitialized) {
+            rvFeed.scrollToPosition(0)
+        }
+        viewModel.refresh()
+    }
+
     override fun onPause() {
         if (::adapter.isInitialized) {
             adapter.pauseAllPlayers()
@@ -127,7 +134,7 @@ class FeedFragment : Fragment() {
     private fun applyAdoption(post: Post) {
         val currentUid = auth.currentUser?.uid ?: return
         if (post.userId == currentUid) {
-            Toast.makeText(context, "You cannot adopt your own pet!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "You cannot adopt your own pet!", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -142,7 +149,7 @@ class FeedFragment : Fragment() {
                         onSuccess = { alreadyPending ->
                             if (alreadyPending) {
                                 progressBar.visibility = View.GONE
-                                Toast.makeText(context, "You already have a pending application for this pet!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(requireContext(), "You already have a pending application for this pet!", Toast.LENGTH_SHORT).show()
                             } else {
                                 val applyResult = postRepository.applyForAdoption(
                                     post.postId,
@@ -153,17 +160,17 @@ class FeedFragment : Fragment() {
                                 progressBar.visibility = View.GONE
                                 applyResult.fold(
                                     onSuccess = {
-                                        Toast.makeText(context, "Application sent successfully!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(requireContext(), "Application sent successfully!", Toast.LENGTH_SHORT).show()
                                     },
                                     onFailure = { error ->
-                                        Toast.makeText(context, error.message ?: "Failed to send application", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(requireContext(), error.message ?: "Failed to send application", Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
                         },
                         onFailure = { error ->
                             progressBar.visibility = View.GONE
-                            Toast.makeText(context, error.message ?: "Failed to verify application status", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), error.message ?: "Failed to verify application status", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }

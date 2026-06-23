@@ -64,6 +64,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.bottomNavigation.setOnItemReselectedListener { item ->
+            if (item.itemId == R.id.feedFragment) {
+                val navHostFragment = supportFragmentManager
+                    .findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
+                val currentFragment = navHostFragment?.childFragmentManager?.fragments?.firstOrNull()
+                if (currentFragment is com.example.adoptus.fragment.FeedFragment) {
+                    currentFragment.refreshFeed()
+                }
+            }
+        }
+
         // Sembunyikan BottomNav saat masuk ke halaman yang tidak butuh tab bar
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
