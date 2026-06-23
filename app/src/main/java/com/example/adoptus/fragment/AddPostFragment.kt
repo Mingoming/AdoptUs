@@ -203,7 +203,7 @@ class AddPostFragment : Fragment() {
                 breed = breed,
                 age = age,
                 ageUnit = ageUnit.ifEmpty { "Months" },
-                city = "Indonesia",
+                city = "Indonesia (Lokasi belum diatur)",
                 description = description,
                 mediaUrl = "",
                 mediaType = "image",
@@ -238,7 +238,7 @@ class AddPostFragment : Fragment() {
                 } else {
                     // Fallback ke Firestore jika cache kosong
                     val userDoc = db.collection("users").document(uid).get().await()
-                    userDoc.getString("city")?.trim().orEmpty().ifBlank { "Indonesia" }
+                    userDoc.getString("city")?.trim().orEmpty().ifBlank { "Indonesia (Lokasi belum diatur)" }
                 }
 
                 uploadedMedia = selectedMediaUri?.let { mediaUri ->
