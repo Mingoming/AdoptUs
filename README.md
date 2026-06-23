@@ -291,6 +291,7 @@ ADR tersedia di `doc/adr/`:
 * [ADR 0011](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0011-paged-query-pagination-for-feed-and-explore.md): Pemuatan data terpaginasi (Pagination) feed utama dan explore.
 * [ADR 0012](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0012-deep-link-navigation-routing.md): Navigasi detail hewan berbasis Deep Link.
 * [ADR 0013](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0013-database-and-storage-security-rules.md): Aturan keamanan database Firestore dan Supabase Storage.
+* [ADR 0014](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0014-code-quality-refactoring-and-viewmodel-extraction.md): Refactoring kualitas kode, ekstraksi ViewModel, dan testability.
 
 ## Lisensi
 
