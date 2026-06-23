@@ -40,6 +40,10 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * Sistem pemutaran video ala TikTok dengan scroll snapping (PagerSnapHelper) dan auto-pause/mute audio saat meninggalkan halaman feed.
 * Navigasi Deep Link (`adoptus://pet/{postId}`) terintegrasi untuk pendaratan langsung di Pet Detail.
 * Integrasi berkas aturan keamanan resmi (`firestore.rules` & `supabase_rls.sql`) di repositori git.
+* Pembersihan arsitektur Clean Architecture dengan memisahkan direct Firestore dari UI, memusatkan data fetch di repositori (`AuthRepository` & `PostRepository`).
+* Refactoring kualitas kode: memecah binder adapter gemuk, menyatukan format WhatsApp ke utility kustom (`WhatsAppUtils`), memindahkan kode keras jenis hewan ke `arrays.xml`.
+* Mendukung Constructor Injection ramah testing (mockable ViewModels) untuk seluruh ViewModel.
+* Sistem auto-refresh & scroll-to-top postingan feed saat menekan kembali tab Feed (`re-select` Bottom Navigation) ala TikTok.
 
 ### Belum Selesai
 
@@ -81,7 +85,8 @@ app/src/main/
 |   |-- data/
 |   |   |-- model/
 |   |   |   |-- User.kt
-|   |   |   `-- Post.kt
+|   |   |   |-- Post.kt
+|   |   |   `-- Adoption.kt
 |   |   `-- repository/
 |   |       |-- AuthRepository.kt
 |   |       |-- PostMediaRepository.kt
@@ -94,7 +99,11 @@ app/src/main/
 |   |   |-- SettingFragment.kt
 |   |   |-- Petdetailfragment.kt
 |   |   `-- Petdetailfragmentargs.kt
+|   |-- util/
+|   |   `-- WhatsAppUtils.kt
 |   `-- ui/
+|       |-- addpost/
+|       |   `-- AddPostViewModel.kt
 |       |-- auth/
 |       |   |-- AuthViewModel.kt
 |       |   |-- LoginActivity.kt
@@ -104,9 +113,14 @@ app/src/main/
 |       |-- feed/
 |       |   |-- FeedViewModel.kt
 |       |   `-- Feedadapter.kt
-|       `-- profile/
-|           |-- ProfileViewModel.kt
-|           `-- ProfilePostAdapter.kt
+|       |-- profile/
+|       |   |-- ProfileViewModel.kt
+|       |   `-- ProfilePostAdapter.kt
+|       `-- search/
+|           |-- SearchViewModel.kt
+|           |-- SearchHistoryAdapter.kt
+|           |-- SearchPostAdapter.kt
+|           `-- SearchUserAdapter.kt
 `-- res/
     |-- anim/
     |-- color/

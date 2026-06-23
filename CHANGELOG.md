@@ -3,6 +3,23 @@
 Semua perubahan penting pada proyek Android **AdoptUs** didokumentasikan di file ini.
 Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-06-23
+
+### Added
+* Membuat kelas `AddPostViewModel` untuk memisahkan logika pengunggahan, pemetaan kota, dan penulisan post dari `AddPostFragment` (kepatuhan MVVM).
+* Membuat kelas `SearchViewModel` untuk memisahkan logika pencarian postingan/pengguna dan pemuatan explore grid terpaginasi dari `SearchFragment`.
+* Membuat kelas utilitas `WhatsAppUtils` berisi extension function `String.formatToWaUrl` untuk menghilangkan duplikasi logika formatting nomor WA.
+* Menambahkan berkas resource `arrays.xml` untuk mendefinisikan opsi jenis-jenis hewan secara bersih.
+* Menyediakan fitur ketuk ulang tab Feed (`re-select`) untuk secara otomatis mengembalikan scroll ke posisi awal (atas) dan memicu pemuatan ulang postingan baru seperti perilaku TikTok.
+
+### Refactored
+* Mendukung Constructor Injection dengan parameter default untuk seluruh ViewModel (`FeedViewModel`, `ProfileViewModel`, `PetDetailViewModel`, `AuthViewModel`, `SearchViewModel`, `AddPostViewModel`) guna kemudahan testing/mocking.
+* Memecah metode `FeedViewHolder.bind()` yang gemuk (120+ baris) di `FeedAdapter` menjadi fungsi-fungsi privat terfokus (`bindMedia`, `bindOwnerInfo`, `bindLikeButton`).
+* Memindahkan query direct Firestore untuk data legacy post di `FeedAdapter` ke pemanggilan `AuthRepository.getUserProfile()` melalui LifecycleOwner scope.
+* Menghapus instansi direct Firestore (`FirebaseFirestore.getInstance()`) pada `AddPostFragment`, `SearchFragment`, dan `SettingFragment` sehingga steril dan patuh pada Clean Architecture.
+* Mengganti seluruh parameter Toast `context` menjadi `requireContext()` di semua Fragment guna menghindari risiko NullPointerException (NPE).
+* Membersihkan strings placeholder TODO di `strings.xml`.
+
 ## [1.0.0] - 2026-06-23
 
 ### Added
