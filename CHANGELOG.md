@@ -3,6 +3,18 @@
 Semua perubahan penting pada proyek Android **AdoptUs** didokumentasikan di file ini.
 Format mengikuti prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.0] - 2026-06-23
+
+### Added
+* Membuat fragment baru `EditPostFragment` beserta layout `fragment_edit_post.xml` untuk menangani form input penyuntingan postingan.
+* Membuat `EditPostViewModel` untuk memuat data postingan dari Firestore, melakukan pembaruan dokumen (`updatePost`), mengunggah media baru, serta mendeteksi dan menghapus file media lama di Supabase Storage untuk menghemat ruang penyimpanan.
+* Membuat `EditPostFragmentArgs` untuk parsing data Safe Args secara manual sesuai dengan gaya argument parsing yang ada pada proyek.
+* Menambahkan ImageButton edit (`btnEdit`) di kanan atas top bar pada halaman detail hewan (`PetDetailFragment`) yang muncul secara dinamis khusus untuk pemilik postingan.
+
+### Changed
+* Memperbarui `PetDetailViewModel` dan `PetDetailFragment` dengan parameter `forceRefresh = true` agar melewati cache memori internal dan memaksa pemuatan ulang data segar dari Firestore setelah pengguna melakukan penyuntingan dan kembali ke detail.
+* Mendaftarkan `editPostFragment` pada graph `main_nav.xml` dan mengonfigurasi `MainActivity` untuk menyembunyikan bilah navigasi bawah (bottom navigation) saat berada di layar edit.
+
 ## [1.1.0] - 2026-06-23
 
 ### Added
