@@ -101,7 +101,7 @@ class AdoptionHistoryFragment : Fragment() {
                     },
                     onFailure = { error ->
                         Toast.makeText(
-                            context,
+                            requireContext(),
                             error.message ?: "Failed to load adoption history",
                             Toast.LENGTH_SHORT
                         ).show()

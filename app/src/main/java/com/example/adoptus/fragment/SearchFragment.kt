@@ -11,22 +11,23 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.adoptus.MainActivity
 import com.example.adoptus.R
-import com.example.adoptus.data.model.Post
-import com.example.adoptus.data.model.User
+import com.example.adoptus.ui.search.SearchViewModel
 import com.example.adoptus.ui.search.SearchPostAdapter
 import com.example.adoptus.ui.search.SearchUserAdapter
 import com.google.android.material.tabs.TabLayout
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 class SearchFragment : Fragment() {
 
-    private val db = FirebaseFirestore.getInstance()
+    private val viewModel: SearchViewModel by viewModels()
 
     private val PREFS_NAME = "adoptus_search_prefs"
     private val KEY_HISTORY = "search_history"
@@ -45,13 +46,9 @@ class SearchFragment : Fragment() {
     private lateinit var layoutHistorySection: View
     private lateinit var layoutAccountsSection: View
     private lateinit var layoutPostsSection: View
+    private lateinit var btnBackSearch: ImageView
 
     private var searchHistory = mutableListOf<String>()
-
-    private val explorePostsList = mutableListOf<Post>()
-    private var lastExploreVisible: com.google.firebase.firestore.DocumentSnapshot? = null
-    private var isExploreLoading = false
-    private var isExploreLastPage = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -59,7 +56,7 @@ class SearchFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_search, container, false)
 
-        val btnBackSearch = view.findViewById<ImageView>(R.id.btnBackSearch)
+        btnBackSearch = view.findViewById(R.id.btnBackSearch)
         val etSearch = view.findViewById<EditText>(R.id.etSearch)
         tabLayoutFilter = view.findViewById(R.id.tabLayoutFilter)
         rvExploreGrid = view.findViewById(R.id.rvExploreGrid)
@@ -97,7 +94,7 @@ class SearchFragment : Fragment() {
                 val totalItemCount = exploreLayoutManager.itemCount
                 val lastVisibleItem = exploreLayoutManager.findLastVisibleItemPosition()
                 if (lastVisibleItem >= totalItemCount - 3) {
-                    loadExplorePosts()
+                    viewModel.loadExplorePosts()
                 }
             }
         })
@@ -115,7 +112,7 @@ class SearchFragment : Fragment() {
             onHistoryClick = { query ->
                 etSearch.setText(query)
                 etSearch.setSelection(query.length)
-                performSearch(query)
+                viewModel.performSearch(query)
                 showSearchResultsView()
             },
             onRemoveClick = { query ->
@@ -129,15 +126,10 @@ class SearchFragment : Fragment() {
             clearAllHistory()
         }
 
-        // Load explore posts awal (available posts)
-        loadExplorePosts()
-
         // Focus listener for search view to trigger recent history layout
         etSearch.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
-                btnBackSearch.visibility = View.VISIBLE
-                (activity as? MainActivity)?.hideBottomNav()
-
+                showSearchMode()
                 if (etSearch.text.toString().trim().isEmpty()) {
                     showHistoryView()
                 }
@@ -145,9 +137,7 @@ class SearchFragment : Fragment() {
         }
 
         etSearch.setOnClickListener {
-            btnBackSearch.visibility = View.VISIBLE
-            (activity as? MainActivity)?.hideBottomNav()
-
+            showSearchMode()
             if (etSearch.text.toString().trim().isEmpty()) {
                 showHistoryView()
             }
@@ -163,15 +153,13 @@ class SearchFragment : Fragment() {
                     val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                     imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
 
-                    // TAMPILKAN TOMBOL BACK & SEMBUNYIKAN NAVBAR UTAMA
-                    btnBackSearch.visibility = View.VISIBLE
-                    (activity as? MainActivity)?.hideBottomNav()
+                    showSearchMode()
 
                     // Simpan pencarian ke history
                     saveQueryToHistory(query)
 
                     // Jalankan query pencarian dinamis
-                    performSearch(query)
+                    viewModel.performSearch(query)
 
                     // Pindah ke mode hasil pencarian
                     showSearchResultsView()
@@ -224,7 +212,44 @@ class SearchFragment : Fragment() {
             override fun onTabReselected(tab: TabLayout.Tab?) {}
         })
 
+        // Hubungkan state ViewModel ke adapter
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.explorePosts.collect { posts ->
+                exploreAdapter.submitList(posts)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.searchResultsPosts.collect { posts ->
+                resultsPostsAdapter.submitList(posts)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.searchResultsUsers.collect { users ->
+                resultsAccountsAdapter.submitList(users)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.exploreError.collect { error ->
+                error?.let {
+                    Toast.makeText(requireContext(), "Error loading explore: $it", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Load explore posts awal (available posts) jika kosong
+        if (viewModel.explorePosts.value.isEmpty()) {
+            viewModel.loadExplorePosts(isRefresh = true)
+        }
+
         return view
+    }
+
+    private fun showSearchMode() {
+        btnBackSearch.visibility = View.VISIBLE
+        (activity as? MainActivity)?.hideBottomNav()
     }
 
     private fun showHistoryView() {
@@ -280,78 +305,6 @@ class SearchFragment : Fragment() {
         prefs.edit().remove(KEY_HISTORY).apply()
         historyAdapter.updateList(searchHistory)
         layoutHistorySection.visibility = View.GONE
-    }
-
-    private fun loadExplorePosts(isRefresh: Boolean = false) {
-        if (isExploreLoading || (isExploreLastPage && !isRefresh)) return
-        isExploreLoading = true
-
-        if (isRefresh) {
-            explorePostsList.clear()
-            lastExploreVisible = null
-            isExploreLastPage = false
-        }
-
-        var query = db.collection("posts")
-            .whereEqualTo("status", "available")
-            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(15)
-
-        lastExploreVisible?.let {
-            query = query.startAfter(it)
-        }
-
-        query.get()
-            .addOnSuccessListener { snapshot ->
-                isExploreLoading = false
-                val posts = snapshot.documents.mapNotNull { doc ->
-                    doc.data?.let { Post.fromMap(doc.id, it) }
-                }
-                if (posts.size < 15) {
-                    isExploreLastPage = true
-                }
-                explorePostsList.addAll(posts)
-                exploreAdapter.submitList(explorePostsList.toList())
-                lastExploreVisible = snapshot.documents.lastOrNull()
-            }
-            .addOnFailureListener { e ->
-                isExploreLoading = false
-                Toast.makeText(context, "Error loading explore: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun performSearch(query: String) {
-        val lowerQuery = query.lowercase()
-
-        // 1. Cari Post berdasarkan petName (lowercase / containing search di client side agar fleksibel)
-        db.collection("posts")
-            .whereEqualTo("status", "available")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val allPosts = snapshot.documents.mapNotNull { doc ->
-                    doc.data?.let { Post.fromMap(doc.id, it) }
-                }
-                val filteredPosts = allPosts.filter {
-                    it.petName.lowercase().contains(lowerQuery) ||
-                            it.breed.lowercase().contains(lowerQuery) ||
-                            it.petType.lowercase().contains(lowerQuery)
-                }
-                resultsPostsAdapter.submitList(filteredPosts)
-            }
-
-        // 2. Cari Accounts berdasarkan username / fullName
-        db.collection("users")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val allUsers = snapshot.documents.mapNotNull { doc ->
-                    doc.data?.let { User.fromMap(doc.id, it) }
-                }
-                val filteredUsers = allUsers.filter {
-                    it.username.lowercase().contains(lowerQuery) ||
-                            it.fullName.lowercase().contains(lowerQuery)
-                }
-                resultsAccountsAdapter.submitList(filteredUsers)
-            }
     }
 
     private fun navigateToDetail(postId: String) {

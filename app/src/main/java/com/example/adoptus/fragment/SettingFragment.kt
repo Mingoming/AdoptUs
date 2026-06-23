@@ -21,7 +21,6 @@ import android.widget.ImageView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.example.adoptus.data.repository.PostMediaRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -29,7 +28,6 @@ import kotlinx.coroutines.tasks.await
 class SettingFragment : Fragment() {
 
     private val auth = FirebaseAuth.getInstance()
-    private val db   = FirebaseFirestore.getInstance()
     private val mediaRepository = PostMediaRepository()
     private var selectedAvatarUri: Uri? = null
 
@@ -45,7 +43,7 @@ class SettingFragment : Fragment() {
             }
         } else if (result.resultCode == com.yalantis.ucrop.UCrop.RESULT_ERROR) {
             val cropError = com.yalantis.ucrop.UCrop.getError(result.data!!)
-            Toast.makeText(context, "Crop failed: ${cropError?.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Crop failed: ${cropError?.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -101,7 +99,7 @@ class SettingFragment : Fragment() {
         val tilNewPassword    = view.findViewById<TextInputLayout>(R.id.tilNewPassword)
         val tilConfirmPassword= view.findViewById<TextInputLayout>(R.id.tilConfirmPassword)
 
-        // Load data user dari Firestore
+        // Load data user dari Firestore via AuthRepository
         loadUserData(ivAvatar, etFullName, etUsername, etBio, etCity, etWhatsapp)
 
         btnBack.setOnClickListener { findNavController().navigateUp() }
@@ -131,15 +129,15 @@ class SettingFragment : Fragment() {
                 return@setOnClickListener
             }
             if (fullName.isEmpty()) {
-                Toast.makeText(context, "Full name is required", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Full name is required", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (fullName.length > 80) {
-                Toast.makeText(context, "Full name is too long", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Full name is too long", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (bio.length > 300 || city.length > 80 || whatsapp.length > 30) {
-                Toast.makeText(context, "Profile field is too long", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Profile field is too long", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -175,7 +173,7 @@ class SettingFragment : Fragment() {
                         uploadedPhotoUrl = result.publicUrl
                     }
 
-                    // Update profil di Firestore
+                    // Update profil di Firestore via AuthRepository
                     val updates = mutableMapOf<String, Any>(
                         "fullName" to fullName,
                         "username" to username,
@@ -188,12 +186,10 @@ class SettingFragment : Fragment() {
                         updates["photoUrl"] = uploadedPhotoUrl!!
                     }
 
-                    db.collection("users").document(uid)
-                        .update(updates)
-                        .await()
+                    val repo = com.example.adoptus.data.repository.AuthRepository()
+                    repo.updateUserProfile(uid, updates).getOrThrow()
 
                     // Update cache local
-                    val repo = com.example.adoptus.data.repository.AuthRepository()
                     val currentUser = repo.getCachedUserProfile(requireContext())
                     val updatedUser = User(
                         id = uid,
@@ -214,7 +210,7 @@ class SettingFragment : Fragment() {
 
                     loadingOverlay.visibility = View.GONE
                     btnSave.isEnabled = true
-                    Toast.makeText(context, "Profile updated!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Profile updated!", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
 
                 } catch (e: Exception) {
@@ -227,7 +223,7 @@ class SettingFragment : Fragment() {
                             "Please log out and log in again before changing password."
                         else -> "Failed to save: ${e.message}"
                     }
-                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -262,14 +258,14 @@ class SettingFragment : Fragment() {
         val uid = auth.currentUser?.uid ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val doc = db.collection("users").document(uid).get().await()
-                val user = User.fromMap(doc.id, doc.data.orEmpty())
+                val repo = com.example.adoptus.data.repository.AuthRepository()
+                val user = repo.getUserProfile(uid).getOrThrow()
                 etFullName.setText(user.fullName)
                 etUsername.setText(user.username)
                 etBio.setText(user.bio)
                 etCity.setText(user.city)
                 etWhatsapp.setText(user.whatsapp)
-                if (user.photoUrl.isNotEmpty()) {
+                if (user.photoUrl.isNotBlank()) {
                     ivAvatar.load(user.photoUrl) {
                         crossfade(true)
                         placeholder(R.drawable.ic_profile_placeholder)

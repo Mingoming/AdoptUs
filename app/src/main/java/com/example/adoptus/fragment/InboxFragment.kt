@@ -98,7 +98,7 @@ class InboxFragment : Fragment() {
                         }
                     },
                     onFailure = { error ->
-                        Toast.makeText(context, error.message ?: "Failed to load requests", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), error.message ?: "Failed to load requests", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -113,10 +113,10 @@ class InboxFragment : Fragment() {
             result.fold(
                 onSuccess = {
                     val msg = if (status == "approved") "Application approved!" else "Application rejected!"
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
                 },
                 onFailure = { error ->
-                    Toast.makeText(context, error.message ?: "Failed to update status", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), error.message ?: "Failed to update status", Toast.LENGTH_SHORT).show()
                 }
             )
         }

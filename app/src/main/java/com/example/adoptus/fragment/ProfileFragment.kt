@@ -23,6 +23,7 @@ import com.example.adoptus.ui.profile.ProfileUiState
 import com.example.adoptus.ui.profile.ProfileViewModel
 import com.example.adoptus.ui.profile.profileDisplayName
 import com.example.adoptus.ui.profile.profileLocation
+import com.example.adoptus.util.formatToWaUrl
 import com.google.android.material.imageview.ShapeableImageView
 import kotlinx.coroutines.launch
 
@@ -132,13 +133,7 @@ class ProfileFragment : Fragment() {
 
             if (user.whatsapp.isNotBlank()) {
                 whatsapp.setOnClickListener {
-                    val cleanedNum = user.whatsapp.replace(Regex("[^0-9+]"), "")
-                    val formattedNum = when {
-                        cleanedNum.startsWith("0") -> "62" + cleanedNum.substring(1)
-                        cleanedNum.startsWith("+") -> cleanedNum.substring(1)
-                        else -> cleanedNum
-                    }
-                    val targetUrl = "https://wa.me/$formattedNum"
+                    val targetUrl = user.whatsapp.formatToWaUrl()
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
                     startActivity(intent)
                 }

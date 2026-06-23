@@ -16,27 +16,21 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import coil.load
 import com.example.adoptus.MainActivity
 import com.example.adoptus.R
 import com.example.adoptus.data.model.Post
-import com.example.adoptus.data.repository.PostMediaRepository
-import com.example.adoptus.data.repository.PostRepository
-import com.example.adoptus.data.repository.UploadedPostMedia
+import com.example.adoptus.ui.addpost.AddPostState
+import com.example.adoptus.ui.addpost.AddPostViewModel
 import com.google.firebase.Timestamp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
 
 class AddPostFragment : Fragment() {
 
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseFirestore.getInstance()
-    private val postRepository = PostRepository()
-    private val mediaRepository = PostMediaRepository()
+    private val viewModel: AddPostViewModel by viewModels()
 
     private var selectedMediaUri: Uri? = null
     private var selectedMediaType: String? = null
@@ -67,7 +61,7 @@ class AddPostFragment : Fragment() {
             if (selectedMediaType == null) {
                 selectedMediaUri = null
                 Toast.makeText(
-                    context,
+                    requireContext(),
                     "Only JPEG, PNG, WebP, and MP4 files are supported",
                     Toast.LENGTH_LONG
                 ).show()
@@ -116,14 +110,7 @@ class AddPostFragment : Fragment() {
         val cbVaccinated = view.findViewById<CheckBox>(R.id.cbVaccinated)
         val cbHealthPassport = view.findViewById<CheckBox>(R.id.cbHealthPassport)
 
-        val animalTypes = arrayOf(
-            "Kucing",
-            "Anjing",
-            "Burung",
-            "Kelinci",
-            "Hamster",
-            "Lainnya"
-        )
+        val animalTypes = resources.getStringArray(R.array.animal_types)
         actvPetType.setAdapter(
             ArrayAdapter(
                 requireContext(),
@@ -215,64 +202,32 @@ class AddPostFragment : Fragment() {
                 createdAt = Timestamp.now()
             )
 
-            createPost(post)
+            viewModel.createPost(requireContext(), post, selectedMediaUri)
         }
-    }
-
-    private fun createPost(post: Post) {
-        setUploading(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            var uploadedMedia: UploadedPostMedia? = null
-
-            try {
-                val uid = auth.currentUser?.uid
-                    ?: throw IllegalStateException("Not logged in")
-
-                // Cek cache lokal SharedPreferences terlebih dahulu
-                val authRepo = com.example.adoptus.data.repository.AuthRepository()
-                val cachedUser = authRepo.getCachedUserProfile(requireContext())
-
-                val userCity = if (cachedUser != null && cachedUser.id == uid && cachedUser.city.isNotBlank()) {
-                    cachedUser.city
-                } else {
-                    // Fallback ke Firestore jika cache kosong
-                    val userDoc = db.collection("users").document(uid).get().await()
-                    userDoc.getString("city")?.trim().orEmpty().ifBlank { "Indonesia (Lokasi belum diatur)" }
-                }
-
-                uploadedMedia = selectedMediaUri?.let { mediaUri ->
-                    mediaRepository.uploadMedia(
-                        contentResolver = requireContext().contentResolver,
-                        mediaUri = mediaUri,
-                        uid = uid
-                    ).getOrThrow()
-                }
-
-                val postWithMedia = post.copy(
-                    city = userCity,
-                    mediaUrl = uploadedMedia?.publicUrl.orEmpty(),
-                    mediaType = uploadedMedia?.mediaType ?: "image"
-                )
-
-                postRepository.createPost(postWithMedia, cachedUser).getOrElse { postError ->
-                    uploadedMedia?.let { uploaded ->
-                        mediaRepository.deleteMedia(uploaded.path)
-                            .exceptionOrNull()
-                            ?.let(postError::addSuppressed)
+            viewModel.state.collect { state ->
+                when (state) {
+                    is AddPostState.Idle -> {
+                        setUploading(false)
                     }
-                    throw postError
+                    is AddPostState.Loading -> {
+                        setUploading(true)
+                    }
+                    is AddPostState.Success -> {
+                        setUploading(false)
+                        Toast.makeText(requireContext(), "Post uploaded!", Toast.LENGTH_SHORT).show()
+                        findNavController().navigateUp()
+                    }
+                    is AddPostState.Error -> {
+                        setUploading(false)
+                        Toast.makeText(
+                            requireContext(),
+                            "Upload failed: ${state.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
                 }
-
-                Toast.makeText(context, "Post uploaded!", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
-            } catch (error: Exception) {
-                setUploading(false)
-                Toast.makeText(
-                    context,
-                    "Upload failed: ${error.message}",
-                    Toast.LENGTH_LONG
-                ).show()
             }
         }
     }
