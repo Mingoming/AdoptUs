@@ -49,6 +49,7 @@ class PetDetailFragment : Fragment() {
     private lateinit var description: TextView
     private lateinit var vaccinated: TextView
     private lateinit var healthPassport: TextView
+    private lateinit var btnEdit: ImageButton
     private var videoPlayer: ExoPlayer? = null
 
     override fun onCreateView(
@@ -74,19 +75,20 @@ class PetDetailFragment : Fragment() {
         description = view.findViewById(R.id.tvDescription)
         vaccinated = view.findViewById(R.id.tvVaccinated)
         healthPassport = view.findViewById(R.id.tvHealthPassport)
+        btnEdit = view.findViewById(R.id.btnEdit)
 
         view.findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
             findNavController().navigateUp()
         }
         view.findViewById<Button>(R.id.btnRetry).setOnClickListener {
-            viewModel.loadPost(args.postId)
+            viewModel.loadPost(args.postId, forceRefresh = true)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.state.collect(::render)
         }
 
-        viewModel.loadPost(args.postId)
+        viewModel.loadPost(args.postId, forceRefresh = true)
     }
 
     private fun render(state: PetDetailState) {
@@ -114,6 +116,20 @@ class PetDetailFragment : Fragment() {
     }
 
     private fun bindPost(post: Post) {
+        val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId != null && post.userId == currentUserId) {
+            btnEdit.visibility = View.VISIBLE
+            btnEdit.setOnClickListener {
+                val bundle = Bundle().apply {
+                    putString("postId", post.postId)
+                }
+                findNavController().navigate(R.id.action_detail_to_edit, bundle)
+            }
+        } else {
+            btnEdit.visibility = View.GONE
+            btnEdit.setOnClickListener(null)
+        }
+
         petName.text = post.petName
         breedAge.text = post.detailBreedAge()
         city.text = post.city.ifBlank { "Location not provided" }

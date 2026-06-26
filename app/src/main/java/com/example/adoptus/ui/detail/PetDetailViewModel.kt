@@ -22,9 +22,9 @@ class PetDetailViewModel(
     private val _state = MutableStateFlow<PetDetailState>(PetDetailState.Loading)
     val state: StateFlow<PetDetailState> = _state.asStateFlow()
 
-    fun loadPost(postId: String) {
+    fun loadPost(postId: String, forceRefresh: Boolean = false) {
         val currentPost = (_state.value as? PetDetailState.Success)?.post
-        if (currentPost?.postId == postId) return
+        if (!forceRefresh && currentPost?.postId == postId) return
 
         if (postId.isBlank()) {
             _state.value = PetDetailState.Error("Post ID is missing")

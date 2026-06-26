@@ -198,6 +198,31 @@ class PostRepository {
         }
     }
 
+    suspend fun updatePost(post: Post): Result<Unit> {
+        return try {
+            postsCollection.document(post.postId)
+                .update(
+                    mapOf(
+                        "petName" to post.petName,
+                        "petType" to post.petType,
+                        "breed" to post.breed,
+                        "age" to post.age,
+                        "ageUnit" to post.ageUnit,
+                        "city" to post.city,
+                        "description" to post.description,
+                        "mediaUrl" to post.mediaUrl,
+                        "mediaType" to post.mediaType,
+                        "isVaccinated" to post.isVaccinated,
+                        "hasHealthPassport" to post.hasHealthPassport,
+                        "adoptionFee" to post.adoptionFee
+                    )
+                ).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ── Delete ───────────────────────────────────────────────────────────────
 
     suspend fun deletePost(postId: String): Result<Unit> {

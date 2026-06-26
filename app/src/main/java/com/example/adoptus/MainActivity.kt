@@ -81,7 +81,8 @@ class MainActivity : AppCompatActivity() {
                 R.id.addPostFragment,
                 R.id.petDetailFragment,
                 R.id.inboxFragment,
-                R.id.adoptionHistoryFragment -> hideBottomNav()
+                R.id.adoptionHistoryFragment,
+                R.id.editPostFragment -> hideBottomNav()
                 else -> showBottomNav()
             }
 

@@ -44,6 +44,8 @@ Status kode terbaru sudah melewati starter app: aplikasi memiliki autentikasi Fi
 * Refactoring kualitas kode: memecah binder adapter gemuk, menyatukan format WhatsApp ke utility kustom (`WhatsAppUtils`), memindahkan kode keras jenis hewan ke `arrays.xml`.
 * Mendukung Constructor Injection ramah testing (mockable ViewModels) untuk seluruh ViewModel.
 * Sistem auto-refresh & scroll-to-top postingan feed saat menekan kembali tab Feed (`re-select` Bottom Navigation) ala TikTok.
+* Fitur Edit Post (Ubah Postingan) bagi pemilik hewan peliharaan, lengkap dengan pengelolaan pembersihan media lama di Supabase Storage secara otomatis.
+* Mekanisme auto-refresh halaman detail hewan (`PetDetailFragment`) pasca-penyuntingan dengan bendera `forceRefresh` guna menyajikan informasi termutakhir.
 
 ### Belum Selesai
 
@@ -95,6 +97,8 @@ app/src/main/
 |   |   |-- FeedFragment.kt
 |   |   |-- SearchFragment.kt
 |   |   |-- AddPostFragment.kt
+|   |   |-- EditPostFragment.kt
+|   |   |-- EditPostFragmentArgs.kt
 |   |   |-- ProfileFragment.kt
 |   |   |-- SettingFragment.kt
 |   |   |-- Petdetailfragment.kt
@@ -110,6 +114,8 @@ app/src/main/
 |       |   `-- RegisterActivity.kt
 |       |-- detail/
 |       |   `-- PetDetailViewModel.kt
+|       |-- editpost/
+|       |   `-- EditPostViewModel.kt
 |       |-- feed/
 |       |   |-- FeedViewModel.kt
 |       |   `-- Feedadapter.kt
@@ -211,6 +217,7 @@ App dibuka
     `-- Sudah login -> NavHost feedFragment
         |-- FeedFragment
         |   `-- PetDetailFragment
+        |       `-- EditPostFragment
         |-- SearchFragment
         |-- AddPostFragment
         |-- ProfileFragment
@@ -221,7 +228,7 @@ App dibuka
         `-- SettingFragment
 ```
 
-Bottom navigation disembunyikan saat masuk ke `AddPostFragment`, `PetDetailFragment`, dan `InboxFragment`.
+Bottom navigation disembunyikan saat masuk ke `AddPostFragment`, `PetDetailFragment`, `InboxFragment`, `AdoptionHistoryFragment`, dan `EditPostFragment`.
 
 ## Cara Menjalankan
 
@@ -292,6 +299,7 @@ ADR tersedia di `doc/adr/`:
 * [ADR 0012](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0012-deep-link-navigation-routing.md): Navigasi detail hewan berbasis Deep Link.
 * [ADR 0013](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0013-database-and-storage-security-rules.md): Aturan keamanan database Firestore dan Supabase Storage.
 * [ADR 0014](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0014-code-quality-refactoring-and-viewmodel-extraction.md): Refactoring kualitas kode, ekstraksi ViewModel, dan testability.
+* [ADR 0015](file:///c:/Amanta/Kuliah/Mobile/AdoptUs/AdoptUs/doc/adr/0015-edit-post-feature-and-media-cleanup.md): Fitur Edit Post (Ubah Postingan) dan Manajemen Pembersihan Media.
 
 ## Lisensi
 
